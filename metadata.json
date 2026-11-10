@@ -1,0 +1,6 @@
+{
+  "name": "Dragon Wallpapers",
+  "description": "High-speed offline Dragon Ball wallpaper app featuring iconic characters, transformations, sagas, instant download to gallery, and one-tap wallpaper apply.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
