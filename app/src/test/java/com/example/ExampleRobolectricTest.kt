@@ -26,14 +26,14 @@ class ExampleRobolectricTest {
   @Test
   fun `verify wallpapers catalog has wide variety across all categories`() {
     val wallpapers = WallpaperRepository.ALL_WALLPAPERS
-    assertTrue("Should have extensive collection of wallpapers", wallpapers.size >= 25)
+    assertTrue("Should have more than 1000 wallpapers", wallpapers.size >= 1000)
 
     // Verify key characters exist
     val characters = wallpapers.map { it.character }.toSet()
     assertTrue(characters.contains("Goku"))
     assertTrue(characters.contains("Vegeta"))
     assertTrue(characters.contains("Gohan"))
-    assertTrue(characters.contains("Trunks"))
+    assertTrue(characters.contains("Trunks") || characters.any { it.contains("Trunks") })
     assertTrue(characters.contains("Piccolo"))
     assertTrue(characters.contains("Shenron"))
 

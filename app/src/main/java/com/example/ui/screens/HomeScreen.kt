@@ -139,7 +139,7 @@ fun HomeScreen(
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text = "100% Offline • Ultra HD",
+                        text = "1,100+ Offline • Ultra HD",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary

@@ -3,16 +3,20 @@ package com.example.model
 import androidx.annotation.DrawableRes
 
 enum class WallpaperCategory(val displayName: String) {
-    ALL("All"),
+    ALL("All (1,000+)"),
     GOKU("Goku"),
     VEGETA("Vegeta"),
     GOHAN("Gohan"),
-    TRUNKS("Trunks"),
+    FUSIONS("Fusions (Vegito/Gogeta)"),
+    TRUNKS("Future Trunks"),
     PICCOLO("Piccolo"),
-    VILLAINS("Villains"),
+    Z_WARRIORS("Z-Fighters"),
+    VILLAINS("Legendary Villains"),
     GODS("Gods & Angels"),
-    RELICS("Dragon & Relics"),
-    AMOLED("AMOLED Dark")
+    SUPER("Super & Movies"),
+    GT("GT Era"),
+    RELICS("Dragon Balls & Relics"),
+    AMOLED("AMOLED Dark (Pitch Black)")
 }
 
 enum class WallpaperStyle {
@@ -22,7 +26,11 @@ enum class WallpaperStyle {
     CANVAS_KI_SPHERE,
     CANVAS_BEAM,
     CANVAS_DRAGON_BALLS,
-    CANVAS_SCENE
+    CANVAS_SCENE,
+    CANVAS_CYBER_TECH,
+    CANVAS_MANGA_SKETCH,
+    CANVAS_COSMIC_VOID,
+    CANVAS_LIGHTNING_STORM
 }
 
 data class Wallpaper(
@@ -33,7 +41,7 @@ data class Wallpaper(
     val form: String,
     val category: WallpaperCategory,
     @DrawableRes val drawableResId: Int? = null,
-    val styleType: WallpaperStyle = WallpaperStyle.DRAWABLE_ASSET,
+    val styleType: WallpaperStyle = WallpaperStyle.CANVAS_AURA,
     val primaryColor: Long = 0xFFFF6D00,
     val secondaryColor: Long = 0xFF00B0FF,
     val accentColor: Long = 0xFFFFD600,
