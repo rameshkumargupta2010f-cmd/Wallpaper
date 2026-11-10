@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,9 +16,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -43,9 +46,12 @@ import com.example.model.Wallpaper
 fun WallpaperCard(
     wallpaper: Wallpaper,
     isFavorite: Boolean,
+    isMultiSelectMode: Boolean = false,
+    isSelectedForBatch: Boolean = false,
     onWallpaperClick: (Wallpaper) -> Unit,
     onToggleFavorite: (Wallpaper) -> Unit,
     onQuickDownload: (Wallpaper) -> Unit,
+    onToggleMultiSelect: (Wallpaper) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -53,85 +59,132 @@ fun WallpaperCard(
             .fillMaxWidth()
             .aspectRatio(9f / 16f)
             .clip(RoundedCornerShape(18.dp))
-            .clickable { onWallpaperClick(wallpaper) }
+            .clickable {
+                if (isMultiSelectMode) {
+                    onToggleMultiSelect(wallpaper)
+                } else {
+                    onWallpaperClick(wallpaper)
+                }
+            }
+            .then(
+                if (isSelectedForBatch) {
+                    Modifier.border(2.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(18.dp))
+                } else Modifier
+            )
             .testTag("wallpaper_card_${wallpaper.id}"),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Wallpaper Thumbnail
             WallpaperThumbnail(
                 wallpaper = wallpaper,
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Top gradient overlay for action buttons visibility
+            // Top overlay: badges & action buttons
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.65f),
-                                Color.Transparent
-                            )
+                            colors = listOf(Color.Black.copy(alpha = 0.70f), Color.Transparent)
                         )
                     )
                     .padding(8.dp)
             ) {
-                // Top Tag (Character or Form)
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color.Black.copy(alpha = 0.55f),
-                    modifier = Modifier.align(Alignment.CenterStart)
+                // Character Tag & Resolution badge
+                Row(
+                    modifier = Modifier.align(Alignment.CenterStart),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = wallpaper.character,
-                        color = Color(wallpaper.accentColor),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.Black.copy(alpha = 0.6f)
+                    ) {
+                        Text(
+                            text = wallpaper.character,
+                            color = Color(wallpaper.accentColor),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                        )
+                    }
+
+                    if (wallpaper.resolution.contains("4K")) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                        ) {
+                            Text(
+                                text = "4K",
+                                color = Color.White,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    if (wallpaper.isTrending) {
+                        Icon(
+                            imageVector = Icons.Default.Whatshot,
+                            contentDescription = "Trending",
+                            tint = Color(0xFFFF5252),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
 
-                // Favorite Button
-                val favColor by animateColorAsState(
-                    targetValue = if (isFavorite) Color(0xFFFF1744) else Color.White,
-                    label = "fav_color"
-                )
-
-                IconButton(
-                    onClick = { onToggleFavorite(wallpaper) },
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .size(36.dp)
-                        .background(Color.Black.copy(alpha = 0.45f), CircleShape)
-                        .testTag("fav_btn_${wallpaper.id}")
-                ) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                        tint = favColor,
-                        modifier = Modifier.size(18.dp)
+                // Checkbox in MultiSelect Mode OR Favorite Button
+                if (isMultiSelectMode) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(if (isSelectedForBatch) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.5f))
+                            .border(1.5.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelectedForBatch) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                } else {
+                    val favColor by animateColorAsState(
+                        targetValue = if (isFavorite) Color(0xFFFF1744) else Color.White,
+                        label = "fav_color"
                     )
+
+                    IconButton(
+                        onClick = { onToggleFavorite(wallpaper) },
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(34.dp)
+                            .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                            .testTag("fav_btn_${wallpaper.id}")
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                            tint = favColor,
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
                 }
             }
 
-            // Bottom gradient overlay for title and details
+            // Bottom overlay: Title and Quick Download
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.85f)
-                            )
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.88f))
                         )
                     )
                     .padding(10.dp)
@@ -145,7 +198,7 @@ fun WallpaperCard(
                         Text(
                             text = wallpaper.title,
                             color = Color.White,
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -153,27 +206,28 @@ fun WallpaperCard(
                         Text(
                             text = wallpaper.form,
                             color = Color(wallpaper.primaryColor),
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
 
-                    // Quick download icon button
-                    IconButton(
-                        onClick = { onQuickDownload(wallpaper) },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
-                            .testTag("download_quick_${wallpaper.id}")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Download,
-                            contentDescription = "Quick download wallpaper",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
+                    if (!isMultiSelectMode) {
+                        IconButton(
+                            onClick = { onQuickDownload(wallpaper) },
+                            modifier = Modifier
+                                .size(34.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                .testTag("download_quick_${wallpaper.id}")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Download,
+                                contentDescription = "Quick download wallpaper",
+                                tint = Color.White,
+                                modifier = Modifier.size(17.dp)
+                            )
+                        }
                     }
                 }
             }

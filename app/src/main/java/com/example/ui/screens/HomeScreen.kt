@@ -31,12 +31,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Today
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -60,6 +67,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.model.HomeSection
+import com.example.model.ResolutionFilter
+import com.example.model.StyleFilter
 import com.example.model.Wallpaper
 import com.example.model.WallpaperCategory
 import com.example.ui.components.WallpaperCard
@@ -76,21 +86,37 @@ fun HomeScreen(
     wallpapers: List<Wallpaper>,
     favoriteIds: Set<String>,
     selectedCategory: WallpaperCategory,
+    selectedSection: HomeSection,
+    selectedResolution: ResolutionFilter,
+    selectedStyle: StyleFilter,
+    categoryCounts: Map<WallpaperCategory, Int>,
+    dailyWallpaper: Wallpaper?,
+    isMultiSelectMode: Boolean,
+    selectedMultiIds: Set<String>,
+    isBatchDownloading: Boolean,
     searchQuery: String,
     sortOrder: WallpaperSortOrder,
     onCategorySelected: (WallpaperCategory) -> Unit,
+    onSectionSelected: (HomeSection) -> Unit,
     onSearchQueryChanged: (String) -> Unit,
     onSortOrderChanged: (WallpaperSortOrder) -> Unit,
     onWallpaperClick: (Wallpaper) -> Unit,
     onToggleFavorite: (Wallpaper) -> Unit,
     onQuickDownload: (Wallpaper) -> Unit,
+    onOpenRandomWallpaper: () -> Unit,
+    onToggleMultiSelectMode: () -> Unit,
+    onToggleMultiSelectItem: (String) -> Unit,
+    onSelectAllVisible: (List<Wallpaper>) -> Unit,
+    onDownloadBatch: () -> Unit,
+    onOpenAdminStudio: () -> Unit,
+    onOpenAdvancedFilters: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isSearchExpanded by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
 
     val featuredWallpapers = remember(wallpapers) {
-        wallpapers.filter { it.drawableResId != null }
+        wallpapers.filter { it.isFeatured || it.drawableResId != null }.take(8)
     }
 
     Column(
@@ -103,7 +129,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -111,7 +137,7 @@ fun HomeScreen(
                 // 4-star mini dragon ball icon
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
                         .background(
                             Brush.radialGradient(
@@ -124,7 +150,7 @@ fun HomeScreen(
                         imageVector = Icons.Default.Star,
                         contentDescription = null,
                         tint = Color(0xFFD50000),
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -139,16 +165,41 @@ fun HomeScreen(
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text = "1,100+ Offline • Ultra HD",
+                        text = "1,100+ Offline Ultra HD Library",
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
 
-            // Search toggle & Sort icon buttons
+            // Action Icons Row
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Random Wallpaper "Surprise Ki"
+                IconButton(
+                    onClick = onOpenRandomWallpaper,
+                    modifier = Modifier.testTag("random_wallpaper_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Casino,
+                        contentDescription = "Random Wallpaper",
+                        tint = Color(0xFFFFD600)
+                    )
+                }
+
+                // Advanced Filter Button
+                IconButton(
+                    onClick = onOpenAdvancedFilters,
+                    modifier = Modifier.testTag("advanced_filters_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FilterList,
+                        contentDescription = "Filter",
+                        tint = if (selectedResolution != ResolutionFilter.ALL || selectedStyle != StyleFilter.ALL) MaterialTheme.colorScheme.primary else Color.White
+                    )
+                }
+
+                // Search toggle
                 IconButton(
                     onClick = {
                         isSearchExpanded = !isSearchExpanded
@@ -163,37 +214,77 @@ fun HomeScreen(
                     )
                 }
 
-                Box {
-                    IconButton(
-                        onClick = { showSortMenu = true },
-                        modifier = Modifier.testTag("sort_menu_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Sort,
-                            contentDescription = "Sort",
-                            tint = Color.White
-                        )
-                    }
+                // Creator Studio / CMS
+                IconButton(
+                    onClick = onOpenAdminStudio,
+                    modifier = Modifier.testTag("admin_studio_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AdminPanelSettings,
+                        contentDescription = "Creator CMS Studio",
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
+        }
 
-                    DropdownMenu(
-                        expanded = showSortMenu,
-                        onDismissRequest = { showSortMenu = false },
-                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                    ) {
-                        WallpaperSortOrder.values().forEach { order ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = order.title,
-                                        color = if (order == sortOrder) MaterialTheme.colorScheme.primary else Color.White,
-                                        fontWeight = if (order == sortOrder) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                },
-                                onClick = {
-                                    onSortOrderChanged(order)
-                                    showSortMenu = false
-                                }
-                            )
+        // Multi-Select Batch Actions Bar
+        if (isMultiSelectMode) {
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${selectedMultiIds.size} Selected",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { onSelectAllVisible(wallpapers) },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.15f)),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Text("Select All", fontSize = 11.sp, color = Color.White)
+                        }
+
+                        Button(
+                            onClick = onDownloadBatch,
+                            enabled = selectedMultiIds.isNotEmpty() && !isBatchDownloading,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            if (isBatchDownloading) {
+                                CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(14.dp))
+                            } else {
+                                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Download (${selectedMultiIds.size})", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        IconButton(
+                            onClick = onToggleMultiSelectMode,
+                            modifier = Modifier.size(34.dp)
+                        ) {
+                            Icon(Icons.Default.Clear, contentDescription = "Cancel", tint = Color.Gray, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -206,11 +297,11 @@ fun HomeScreen(
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
+            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = onSearchQueryChanged,
-                    placeholder = { Text("Search by Goku, Vegeta, Saga, Form...", color = Color.Gray, fontSize = 13.sp) },
+                    placeholder = { Text("Search 1,100+ Goku, Vegeta, Beast, Broly, Sagas...", color = Color.Gray, fontSize = 13.sp) },
                     singleLine = true,
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -241,13 +332,23 @@ fun HomeScreen(
         // Main Grid with Featured Carousel Header
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 6.dp, bottom = 88.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxSize()
         ) {
+            // Daily Spotlight Card (shown on explore feed)
+            if (searchQuery.isEmpty() && dailyWallpaper != null && selectedCategory == WallpaperCategory.ALL && selectedSection == HomeSection.ALL) {
+                item(span = { GridItemSpan(2) }) {
+                    DailyWallpaperCard(
+                        dailyWallpaper = dailyWallpaper,
+                        onWallpaperClick = onWallpaperClick
+                    )
+                }
+            }
+
             // Featured Carousel Header (shown when not searching)
-            if (searchQuery.isEmpty() && featuredWallpapers.isNotEmpty()) {
+            if (searchQuery.isEmpty() && featuredWallpapers.isNotEmpty() && selectedSection == HomeSection.ALL) {
                 item(span = { GridItemSpan(2) }) {
                     FeaturedHeroCarousel(
                         featuredList = featuredWallpapers,
@@ -256,35 +357,116 @@ fun HomeScreen(
                 }
             }
 
-            // Category Chips Row (Horizontal Scroll)
-            item(span = { GridItemSpan(2) }) {
-                CategoryChipsRow(
-                    selectedCategory = selectedCategory,
-                    onCategorySelected = onCategorySelected
-                )
-            }
-
-            // Results count and active filter title
+            // Collection Feed Row (All, Trending, Most Downloaded, Recent)
             item(span = { GridItemSpan(2) }) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    HomeSection.values().forEach { sec ->
+                        val isSelected = sec == selectedSection
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isSelected) Color(0xFFFF9100) else Color.White.copy(alpha = 0.08f),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { onSectionSelected(sec) }
+                        ) {
+                            Text(
+                                text = sec.displayName,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Category Chips Row with exact Live Counts
+            item(span = { GridItemSpan(2) }) {
+                CategoryChipsRow(
+                    selectedCategory = selectedCategory,
+                    categoryCounts = categoryCounts,
+                    onCategorySelected = onCategorySelected
+                )
+            }
+
+            // Results count, Multi-select trigger, and Sort
+            item(span = { GridItemSpan(2) }) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (searchQuery.isNotEmpty()) "Search results for \"$searchQuery\"" else "${selectedCategory.displayName} Wallpapers",
-                        fontSize = 15.sp,
+                        text = "${wallpapers.size} Wallpapers",
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
 
-                    Text(
-                        text = "${wallpapers.size} available",
-                        fontSize = 12.sp,
-                        color = Color.White.copy(alpha = 0.6f)
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Multi-select toggle button
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isMultiSelectMode) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onToggleMultiSelectMode() }
+                        ) {
+                            Text(
+                                text = if (isMultiSelectMode) "Done Selecting" else "Batch Download",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Box {
+                            IconButton(
+                                onClick = { showSortMenu = true },
+                                modifier = Modifier.size(34.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Sort,
+                                    contentDescription = "Sort",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = showSortMenu,
+                                onDismissRequest = { showSortMenu = false },
+                                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                            ) {
+                                WallpaperSortOrder.values().forEach { order ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = order.title,
+                                                color = if (order == sortOrder) MaterialTheme.colorScheme.primary else Color.White,
+                                                fontWeight = if (order == sortOrder) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                        },
+                                        onClick = {
+                                            onSortOrderChanged(order)
+                                            showSortMenu = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -312,7 +494,7 @@ fun HomeScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = "Try searching for another character or select 'All'",
+                                text = "Try clearing filters or search query",
                                 fontSize = 13.sp,
                                 color = Color.Gray
                             )
@@ -324,11 +506,86 @@ fun HomeScreen(
                     WallpaperCard(
                         wallpaper = wallpaper,
                         isFavorite = favoriteIds.contains(wallpaper.id),
+                        isMultiSelectMode = isMultiSelectMode,
+                        isSelectedForBatch = selectedMultiIds.contains(wallpaper.id),
                         onWallpaperClick = onWallpaperClick,
                         onToggleFavorite = onToggleFavorite,
-                        onQuickDownload = onQuickDownload
+                        onQuickDownload = onQuickDownload,
+                        onToggleMultiSelect = { onToggleMultiSelectItem(wallpaper.id) }
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DailyWallpaperCard(
+    dailyWallpaper: Wallpaper,
+    onWallpaperClick: (Wallpaper) -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0xFF141722),
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFD600)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(130.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .clickable { onWallpaperClick(dailyWallpaper) }
+    ) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            // Left Thumbnail
+            Box(
+                modifier = Modifier
+                    .width(90.dp)
+                    .fillMaxSize()
+            ) {
+                WallpaperThumbnail(
+                    wallpaper = dailyWallpaper,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            // Right Info
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Today,
+                        contentDescription = null,
+                        tint = Color(0xFFFFD600),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "DAILY SPOTLIGHT WALLPAPER",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFFFFD600),
+                        letterSpacing = 1.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = dailyWallpaper.title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+
+                Text(
+                    text = "${dailyWallpaper.character} • ${dailyWallpaper.resolution} • Tap to view",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
@@ -357,7 +614,7 @@ private fun FeaturedHeroCarousel(
             pageSpacing = 12.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(190.dp)
+                .height(180.dp)
         ) { page ->
             val wp = featuredList[page]
             Surface(
@@ -375,16 +632,12 @@ private fun FeaturedHeroCarousel(
                         modifier = Modifier.fillMaxSize()
                     )
 
-                    // Overlay
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.85f)
-                                    )
+                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
                                 )
                             )
                             .padding(14.dp)
@@ -395,23 +648,23 @@ private fun FeaturedHeroCarousel(
                                 color = MaterialTheme.colorScheme.primary
                             ) {
                                 Text(
-                                    text = "4K KEY VISUAL",
+                                    text = wp.resolution,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = wp.title,
-                                fontSize = 16.sp,
+                                fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
                                 text = "${wp.character} • ${wp.saga}",
-                                fontSize = 12.sp,
+                                fontSize = 11.sp,
                                 color = Color(wp.primaryColor)
                             )
                         }
@@ -425,6 +678,7 @@ private fun FeaturedHeroCarousel(
 @Composable
 private fun CategoryChipsRow(
     selectedCategory: WallpaperCategory,
+    categoryCounts: Map<WallpaperCategory, Int>,
     onCategorySelected: (WallpaperCategory) -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -438,6 +692,7 @@ private fun CategoryChipsRow(
     ) {
         WallpaperCategory.values().forEach { category ->
             val isSelected = category == selectedCategory
+            val count = categoryCounts[category] ?: 0
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.08f),
@@ -447,13 +702,30 @@ private fun CategoryChipsRow(
                     .clickable { onCategorySelected(category) }
                     .testTag("category_chip_${category.name}")
             ) {
-                Text(
-                    text = category.displayName,
-                    fontSize = 13.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = category.displayName,
+                        fontSize = 12.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isSelected) Color.Black.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = "$count",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
             }
         }
     }

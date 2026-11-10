@@ -45,6 +45,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.model.Wallpaper
 import com.example.ui.AppTab
 import com.example.ui.MainViewModel
+import com.example.ui.components.AdminStudioSheet
+import com.example.ui.components.AdvancedFilterSheet
 import com.example.ui.screens.DetailScreen
 import com.example.ui.screens.DownloadedScreen
 import com.example.ui.screens.FavoritesScreen
@@ -52,6 +54,8 @@ import com.example.ui.screens.HomeScreen
 import com.example.ui.theme.DragonWallpapersTheme
 import com.example.util.WallpaperHelper
 import kotlinx.coroutines.launch
+
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,6 +69,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DragonWallpapersApp(viewModel: MainViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -224,14 +229,30 @@ fun DragonWallpapersApp(viewModel: MainViewModel = viewModel()) {
                                 wallpapers = uiState.filteredWallpapers,
                                 favoriteIds = uiState.favoriteIds,
                                 selectedCategory = uiState.selectedCategory,
+                                selectedSection = uiState.selectedSection,
+                                selectedResolution = uiState.selectedResolution,
+                                selectedStyle = uiState.selectedStyle,
+                                categoryCounts = uiState.categoryCounts,
+                                dailyWallpaper = uiState.dailyWallpaper,
+                                isMultiSelectMode = uiState.isMultiSelectMode,
+                                selectedMultiIds = uiState.selectedMultiIds,
+                                isBatchDownloading = uiState.isBatchDownloading,
                                 searchQuery = uiState.searchQuery,
                                 sortOrder = uiState.sortOrder,
                                 onCategorySelected = { viewModel.onSelectCategory(it) },
+                                onSectionSelected = { viewModel.onSelectSection(it) },
                                 onSearchQueryChanged = { viewModel.onSearchQueryChange(it) },
                                 onSortOrderChanged = { viewModel.onSortOrderChange(it) },
                                 onWallpaperClick = { viewModel.openDetail(it) },
                                 onToggleFavorite = { viewModel.toggleFavorite(it) },
-                                onQuickDownload = onQuickDownload
+                                onQuickDownload = onQuickDownload,
+                                onOpenRandomWallpaper = { viewModel.openRandomWallpaper() },
+                                onToggleMultiSelectMode = { viewModel.toggleMultiSelectMode() },
+                                onToggleMultiSelectItem = { viewModel.toggleMultiSelectItem(it) },
+                                onSelectAllVisible = { viewModel.selectAllVisible(it) },
+                                onDownloadBatch = { viewModel.downloadBatchSelected(context) },
+                                onOpenAdminStudio = { viewModel.openAdminStudio() },
+                                onOpenAdvancedFilters = { viewModel.openAdvancedFilters() }
                             )
                         }
 
@@ -258,6 +279,35 @@ fun DragonWallpapersApp(viewModel: MainViewModel = viewModel()) {
                     }
                 }
             }
+        }
+
+        // Admin Studio CMS Sheet
+        if (uiState.showAdminStudio) {
+            AdminStudioSheet(
+                totalWallpapers = uiState.allWallpapers,
+                onDismiss = { viewModel.closeAdminStudio() },
+                onAddWallpaper = { viewModel.addCustomWallpaper(it) },
+                onDeleteWallpaper = { viewModel.deleteWallpaper(it) },
+                onToggleFeatured = { viewModel.toggleFeatured(it) },
+                onToggleTrending = { viewModel.toggleTrending(it) }
+            )
+        }
+
+        // Advanced Filter & Categorization Sheet
+        if (uiState.showAdvancedFilters) {
+            AdvancedFilterSheet(
+                selectedCategory = uiState.selectedCategory,
+                selectedSection = uiState.selectedSection,
+                selectedResolution = uiState.selectedResolution,
+                selectedStyle = uiState.selectedStyle,
+                categoryCounts = uiState.categoryCounts,
+                onCategorySelected = { viewModel.onSelectCategory(it) },
+                onSectionSelected = { viewModel.onSelectSection(it) },
+                onResolutionSelected = { viewModel.onSelectResolution(it) },
+                onStyleSelected = { viewModel.onSelectStyle(it) },
+                onResetFilters = { viewModel.onResetAllFilters() },
+                onDismiss = { viewModel.closeAdvancedFilters() }
+            )
         }
     }
 }

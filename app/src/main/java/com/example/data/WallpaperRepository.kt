@@ -8,6 +8,9 @@ import com.example.model.WallpaperStyle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.Calendar
 
 class WallpaperRepository(context: Context) {
 
@@ -22,6 +25,51 @@ class WallpaperRepository(context: Context) {
         prefs.getStringSet("downloaded", emptySet())?.toSet() ?: emptySet()
     )
     val downloadedIdsFlow: StateFlow<Set<String>> = _downloadedIds.asStateFlow()
+
+    // CMS dynamic additions and deletions
+    private val _deletedIds = MutableStateFlow<Set<String>>(
+        prefs.getStringSet("cms_deleted_wallpapers", emptySet())?.toSet() ?: emptySet()
+    )
+
+    private val _featuredIds = MutableStateFlow<Set<String>>(
+        prefs.getStringSet("cms_featured_wallpapers", emptySet())?.toSet() ?: emptySet()
+    )
+
+    private val _trendingIds = MutableStateFlow<Set<String>>(
+        prefs.getStringSet("cms_trending_wallpapers", emptySet())?.toSet() ?: emptySet()
+    )
+
+    private val _customWallpapers = MutableStateFlow<List<Wallpaper>>(
+        loadCustomWallpapersFromPrefs()
+    )
+
+    // Master Wallpapers list updated when custom wallpapers are added or deleted
+    private val _wallpapersFlow = MutableStateFlow(computeActiveWallpapers())
+    val wallpapersFlow: StateFlow<List<Wallpaper>> = _wallpapersFlow.asStateFlow()
+
+    private fun computeActiveWallpapers(): List<Wallpaper> {
+        val deleted = _deletedIds.value
+        val featured = _featuredIds.value
+        val trending = _trendingIds.value
+
+        val baseList = ALL_WALLPAPERS.filterNot { deleted.contains(it.id) }
+        val customList = _customWallpapers.value.filterNot { deleted.contains(it.id) }
+
+        return (customList + baseList).map { wp ->
+            var updated = wp
+            if (featured.contains(wp.id)) updated = updated.copy(isFeatured = true)
+            if (trending.contains(wp.id)) updated = updated.copy(isTrending = true)
+            updated
+        }
+    }
+
+    private fun updateWallpapers() {
+        _wallpapersFlow.value = computeActiveWallpapers()
+    }
+
+    fun getAllWallpapers(): List<Wallpaper> = _wallpapersFlow.value
+
+    fun getWallpaperById(id: String): Wallpaper? = _wallpapersFlow.value.find { it.id == id }
 
     fun toggleFavorite(wallpaperId: String) {
         val current = _favoriteIds.value.toMutableSet()
@@ -41,9 +89,156 @@ class WallpaperRepository(context: Context) {
         _downloadedIds.value = current
     }
 
-    fun getAllWallpapers(): List<Wallpaper> = ALL_WALLPAPERS
+    // CMS Operations
+    fun addCustomWallpaper(wallpaper: Wallpaper) {
+        val current = _customWallpapers.value.toMutableList()
+        current.add(0, wallpaper)
+        _customWallpapers.value = current
+        saveCustomWallpapersToPrefs(current)
+        updateWallpapers()
+    }
 
-    fun getWallpaperById(id: String): Wallpaper? = ALL_WALLPAPERS.find { it.id == id }
+    fun deleteWallpaper(wallpaperId: String) {
+        val currentDeleted = _deletedIds.value.toMutableSet()
+        currentDeleted.add(wallpaperId)
+        _deletedIds.value = currentDeleted
+        prefs.edit().putStringSet("cms_deleted_wallpapers", currentDeleted).apply()
+
+        // If it was custom, remove from custom list
+        val currentCustom = _customWallpapers.value.filterNot { it.id == wallpaperId }
+        _customWallpapers.value = currentCustom
+        saveCustomWallpapersToPrefs(currentCustom)
+
+        updateWallpapers()
+    }
+
+    fun toggleFeatured(wallpaperId: String) {
+        val current = _featuredIds.value.toMutableSet()
+        if (current.contains(wallpaperId)) current.remove(wallpaperId) else current.add(wallpaperId)
+        _featuredIds.value = current
+        prefs.edit().putStringSet("cms_featured_wallpapers", current).apply()
+        updateWallpapers()
+    }
+
+    fun toggleTrending(wallpaperId: String) {
+        val current = _trendingIds.value.toMutableSet()
+        if (current.contains(wallpaperId)) current.remove(wallpaperId) else current.add(wallpaperId)
+        _trendingIds.value = current
+        prefs.edit().putStringSet("cms_trending_wallpapers", current).apply()
+        updateWallpapers()
+    }
+
+    fun getDailyWallpaper(): Wallpaper {
+        val all = getAllWallpapers()
+        val dayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
+        return all[dayOfYear % all.size]
+    }
+
+    fun getRandomWallpaper(): Wallpaper {
+        val all = getAllWallpapers()
+        return all.random()
+    }
+
+    fun getCategoryCounts(): Map<WallpaperCategory, Int> {
+        val all = getAllWallpapers()
+        val counts = mutableMapOf<WallpaperCategory, Int>()
+        WallpaperCategory.values().forEach { cat ->
+            counts[cat] = if (cat == WallpaperCategory.ALL) {
+                all.size
+            } else if (cat == WallpaperCategory.AMOLED) {
+                all.count { it.isAmoled }
+            } else {
+                all.count { it.category == cat }
+            }
+        }
+        return counts
+    }
+
+    private fun loadCustomWallpapersFromPrefs(): List<Wallpaper> {
+        val jsonStr = prefs.getString("custom_wallpapers_json", null) ?: return emptyList()
+        return try {
+            val array = JSONArray(jsonStr)
+            val list = mutableListOf<Wallpaper>()
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                val catName = obj.optString("category", WallpaperCategory.ALL.name)
+                val category = runCatching { WallpaperCategory.valueOf(catName) }.getOrDefault(WallpaperCategory.ALL)
+                val styleName = obj.optString("styleType", WallpaperStyle.CANVAS_AURA.name)
+                val style = runCatching { WallpaperStyle.valueOf(styleName) }.getOrDefault(WallpaperStyle.CANVAS_AURA)
+
+                val tagsJson = obj.optJSONArray("tags")
+                val tags = mutableListOf<String>()
+                if (tagsJson != null) {
+                    for (t in 0 until tagsJson.length()) {
+                        tags.add(tagsJson.getString(t))
+                    }
+                }
+
+                list.add(
+                    Wallpaper(
+                        id = obj.getString("id"),
+                        title = obj.getString("title"),
+                        character = obj.getString("character"),
+                        saga = obj.optString("saga", "Custom Upload"),
+                        form = obj.optString("form", "Custom Form"),
+                        category = category,
+                        styleType = style,
+                        primaryColor = obj.optLong("primaryColor", 0xFFFF6D00),
+                        secondaryColor = obj.optLong("secondaryColor", 0xFF00B0FF),
+                        accentColor = obj.optLong("accentColor", 0xFFFFD600),
+                        kanjiSymbol = obj.optString("kanjiSymbol", "氣"),
+                        quote = obj.optString("quote", ""),
+                        tags = tags,
+                        isAmoled = obj.optBoolean("isAmoled", false),
+                        isTrending = obj.optBoolean("isTrending", false),
+                        isFeatured = obj.optBoolean("isFeatured", false),
+                        description = obj.optString("description", "Custom wallpaper uploaded via Creator Studio."),
+                        resolution = obj.optString("resolution", "4K Ultra HD"),
+                        downloadsCount = obj.optInt("downloadsCount", 0),
+                        likesCount = obj.optInt("likesCount", 0)
+                    )
+                )
+            }
+            list
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun saveCustomWallpapersToPrefs(list: List<Wallpaper>) {
+        try {
+            val array = JSONArray()
+            list.forEach { wp ->
+                val obj = JSONObject().apply {
+                    put("id", wp.id)
+                    put("title", wp.title)
+                    put("character", wp.character)
+                    put("saga", wp.saga)
+                    put("form", wp.form)
+                    put("category", wp.category.name)
+                    put("styleType", wp.styleType.name)
+                    put("primaryColor", wp.primaryColor)
+                    put("secondaryColor", wp.secondaryColor)
+                    put("accentColor", wp.accentColor)
+                    put("kanjiSymbol", wp.kanjiSymbol)
+                    put("quote", wp.quote)
+                    put("isAmoled", wp.isAmoled)
+                    put("isTrending", wp.isTrending)
+                    put("isFeatured", wp.isFeatured)
+                    put("description", wp.description)
+                    put("resolution", wp.resolution)
+                    put("downloadsCount", wp.downloadsCount)
+                    put("likesCount", wp.likesCount)
+
+                    val tagsArr = JSONArray()
+                    wp.tags.forEach { tagsArr.put(it) }
+                    put("tags", tagsArr)
+                }
+                array.put(obj)
+            }
+            prefs.edit().putString("custom_wallpapers_json", array.toString()).apply()
+        } catch (_: Exception) {}
+    }
 
     companion object {
 
@@ -62,7 +257,7 @@ class WallpaperRepository(context: Context) {
         )
 
         private val CHARACTER_PROFILES: List<CharacterProfile> = listOf(
-            // Goku & Transformations
+            // Goku & Transformations (11 profiles × 15 editions = 165 Goku Wallpapers!)
             CharacterProfile("goku_base", "Goku", "Kaio-Ken x20", "Saiyan Saga", WallpaperCategory.GOKU, 0xFFFF1744, 0xFFFF6D00, 0xFFFFD600, "悟", "Kaio-ken times twenty!", listOf("Goku", "KaioKen", "Saiyan")),
             CharacterProfile("goku_ssj", "Goku", "Super Saiyan 1", "Namek Saga", WallpaperCategory.GOKU, 0xFFFFD600, 0xFFFF6D00, 0xFFFFFFFF, "悟", "I am the hope of the universe!", listOf("Goku", "SSJ", "Namek")),
             CharacterProfile("goku_ssj2", "Goku", "Super Saiyan 2", "Buu Saga", WallpaperCategory.GOKU, 0xFFFFD600, 0xFF00E5FF, 0xFFFFFFFF, "悟", "And this is Super Saiyan 2!", listOf("Goku", "SSJ2", "Lightning")),
@@ -75,7 +270,7 @@ class WallpaperRepository(context: Context) {
             CharacterProfile("kid_goku", "Kid Goku", "Flying Nimbus", "Classic Dragon Ball", WallpaperCategory.GOKU, 0xFFFF6D00, 0xFFFFD600, 0xFF29B6F6, "亀", "Nimbus, let's go on an adventure!", listOf("KidGoku", "Classic", "Nimbus")),
             CharacterProfile("goku_ssj4", "Goku", "Super Saiyan 4", "Dragon Ball GT", WallpaperCategory.GT, 0xFFFF1744, 0xFFFFD600, 0xFF212121, "猿", "Primal Saiyan ferocity unsealed!", listOf("Goku", "SSJ4", "GT", "Primal")),
 
-            // Vegeta & Transformations
+            // Vegeta & Transformations (8 profiles × 15 editions = 120 Vegeta Wallpapers!)
             CharacterProfile("vegeta_scouter", "Vegeta", "Saiyan Prince", "Saiyan Saga", WallpaperCategory.VEGETA, 0xFF2979FF, 0xFFFFD600, 0xFFE040FB, "王", "Bow before the Prince of all Saiyans!", listOf("Vegeta", "Scouter", "Prince")),
             CharacterProfile("vegeta_ssj", "Vegeta", "Super Saiyan", "Android Saga", WallpaperCategory.VEGETA, 0xFFFFD600, 0xFF2979FF, 0xFFFFFFFF, "王", "Does an Android feel fear?!", listOf("Vegeta", "SSJ", "BigBang")),
             CharacterProfile("vegeta_super", "Vegeta", "Super Vegeta", "Cell Saga", WallpaperCategory.VEGETA, 0xFFFFAB00, 0xFFFFD600, 0xFF00E5FF, "王", "I am Super Vegeta!", listOf("Vegeta", "Ascended", "FinalFlash")),
@@ -85,7 +280,7 @@ class WallpaperRepository(context: Context) {
             CharacterProfile("vegeta_ultra_ego", "Vegeta", "Ultra Ego Destruction", "Granolah Arc", WallpaperCategory.VEGETA, 0xFFAA00FF, 0xFFD500F9, 0xFFFF1744, "我", "Unbound battle spirit! Hakai!", listOf("Vegeta", "UltraEgo", "Hakai")),
             CharacterProfile("vegeta_ssj4", "Vegeta", "Super Saiyan 4", "Dragon Ball GT", WallpaperCategory.GT, 0xFFD50000, 0xFF2979FF, 0xFFFFD600, "猿", "I have surpassed the limit of Saiyans!", listOf("Vegeta", "SSJ4", "GT")),
 
-            // Gohan
+            // Gohan (7 profiles × 15 editions = 105 Gohan Wallpapers!)
             CharacterProfile("gohan_kid", "Gohan", "Kid Rage Unleashed", "Saiyan Saga", WallpaperCategory.GOHAN, 0xFFFF6D00, 0xFF76FF03, 0xFFFF1744, "魔", "Leave my dad alone!", listOf("Gohan", "Kid", "Masenko")),
             CharacterProfile("gohan_teen_ssj", "Gohan", "Teen Super Saiyan", "Cell Games", WallpaperCategory.GOHAN, 0xFFFFD600, 0xFF7C4DFF, 0xFFFFFFFF, "悟", "I will protect the Earth!", listOf("Gohan", "Teen", "CellGames")),
             CharacterProfile("gohan_teen_ssj2", "Gohan", "Super Saiyan 2 Father-Son", "Cell Games", WallpaperCategory.GOHAN, 0xFF00E5FF, 0xFFFFD600, 0xFFFFFFFF, "悟", "Now Gohan! Full Power Kamehameha!", listOf("Gohan", "SSJ2", "FatherSon")),
@@ -94,7 +289,7 @@ class WallpaperRepository(context: Context) {
             CharacterProfile("gohan_beast", "Gohan", "Beast Transformation", "Super Hero", WallpaperCategory.GOHAN, 0xFFFF1744, 0xFF7C4DFF, 0xFFE040FB, "獣", "I will never forgive you!", listOf("Gohan", "Beast", "RedEyes")),
             CharacterProfile("future_gohan", "Future Gohan", "One-Armed Defender", "History of Trunks", WallpaperCategory.GOHAN, 0xFFFFD600, 0xFFFF6D00, 0xFF00E5FF, "飯", "My spirit will live on forever!", listOf("Gohan", "Future", "TrunksMentor")),
 
-            // Fusions
+            // Fusions (8 profiles × 15 editions = 120 Fusions Wallpapers!)
             CharacterProfile("vegito_base", "Vegito", "Supreme Potara Warrior", "Buu Saga", WallpaperCategory.FUSIONS, 0xFF2979FF, 0xFFFF6D00, 0xFFFFD600, "合", "All right! Call me Vegito!", listOf("Vegito", "Potara", "Fusion")),
             CharacterProfile("super_vegito", "Vegito", "Super Vegito", "Buu Saga", WallpaperCategory.FUSIONS, 0xFFFFD600, 0xFF2979FF, 0xFFFFFFFF, "合", "Are you ready for the real thing?!", listOf("Vegito", "SuperVegito", "Sword")),
             CharacterProfile("vegito_blue", "Vegito", "Vegito Blue Final Kamehameha", "Future Trunks Arc", WallpaperCategory.FUSIONS, 0xFF00B0FF, 0xFF00E5FF, 0xFFFFD600, "神", "FINAL KAMEHAMEHA!", listOf("Vegito", "VegitoBlue", "GodKi")),
@@ -104,14 +299,14 @@ class WallpaperRepository(context: Context) {
             CharacterProfile("gotenks_base", "Gotenks", "Grim Reaper of Justice", "Buu Saga", WallpaperCategory.FUSIONS, 0xFF7C4DFF, 0xFFFF6D00, 0xFFFFD600, "天", "Ta-da! The Grim Reaper of Justice!", listOf("Gotenks", "Fusion", "Kamikaze")),
             CharacterProfile("gotenks_ssj3", "Gotenks", "Super Saiyan 3 Gotenks", "Buu Saga", WallpaperCategory.FUSIONS, 0xFFFFD600, 0xFF7C4DFF, 0xFF00E5FF, "天", "Super Ghost Kamikaze Attack!", listOf("Gotenks", "SSJ3", "Ghosts")),
 
-            // Trunks & Goten
+            // Trunks & Goten (60 Trunks Wallpapers)
             CharacterProfile("trunks_future_sword", "Trunks", "Future Sword of Hope", "Future Trunks Arc", WallpaperCategory.TRUNKS, 0xFF00E5FF, 0xFFFFD600, 0xFFFFFFFF, "希", "This sword carries the will of mankind!", listOf("Trunks", "SwordOfHope", "Future")),
             CharacterProfile("trunks_future_ssj", "Trunks", "Future Super Saiyan", "Android Saga", WallpaperCategory.TRUNKS, 0xFFFFD600, 0xFF7C4DFF, 0xFF00E5FF, "剣", "You're about to find out what a real Saiyan can do!", listOf("Trunks", "MechaFrieza", "Sword")),
             CharacterProfile("trunks_rage", "Trunks", "Future SSJ Rage", "Future Trunks Arc", WallpaperCategory.TRUNKS, 0xFF00E5FF, 0xFFFFD600, 0xFFFF1744, "怒", "If wanting to save everyone is a sin, I don't care!", listOf("Trunks", "Rage", "DualAura")),
             CharacterProfile("trunks_kid", "Trunks", "Kid Capsule Corp Heir", "Buu Saga", WallpaperCategory.TRUNKS, 0xFFFFD600, 0xFF2979FF, 0xFF00E5FF, "CC", "I can turn Super Saiyan too, you know!", listOf("KidTrunks", "CapsuleCorp", "Gotenks")),
             CharacterProfile("goten_kid", "Goten", "Little Saiyan Prodigy", "Buu Saga", WallpaperCategory.Z_WARRIORS, 0xFFFFD600, 0xFFFF6D00, 0xFF00E5FF, "悟", "Kamehameha!", listOf("Goten", "GokuSon", "Prodigy")),
 
-            // Piccolo & Namekians
+            // Piccolo & Namekians (60 Piccolo Wallpapers)
             CharacterProfile("piccolo_base", "Piccolo", "Special Beam Cannon", "Saiyan Saga", WallpaperCategory.PICCOLO, 0xFF76FF03, 0xFFFFD600, 0xFFFF1744, "魔", "Special Beam Cannon!", listOf("Piccolo", "Makankosappo", "Namek")),
             CharacterProfile("piccolo_super", "Piccolo", "Super Namekian Fusion", "Cell Saga", WallpaperCategory.PICCOLO, 0xFF00E676, 0xFFFF6D00, 0xFFFFFFFF, "神", "I am neither Kami nor Piccolo now!", listOf("Piccolo", "SuperNamekian", "Kami")),
             CharacterProfile("piccolo_orange", "Piccolo", "Orange Piccolo Awakened", "Super Hero", WallpaperCategory.PICCOLO, 0xFFFF6D00, 0xFFFFD600, 0xFF76FF03, "橙", "A little extra power from Shenron!", listOf("Piccolo", "OrangePiccolo", "SuperHero")),
@@ -196,31 +391,31 @@ class WallpaperRepository(context: Context) {
             CharacterProfile("raditz_nappa", "Raditz & Nappa", "Saiyan Invaders", "Saiyan Saga", WallpaperCategory.VILLAINS, 0xFFFF6D00, 0xFF2979FF, 0xFFFFD600, "侵", "Double Sunday! Your brother is a warrior!", listOf("Raditz", "Nappa", "Invaders"))
         )
 
-        // 15 distinct artistic editions created for each character profile
         private data class EditionSpec(
             val suffix: String,
             val nameSuffix: String,
             val style: WallpaperStyle,
             val isAmoled: Boolean,
+            val resolution: String,
             val tags: List<String>
         )
 
         private val EDITIONS: List<EditionSpec> = listOf(
-            EditionSpec("aura_flare", "Blazing Ki Flare", WallpaperStyle.CANVAS_AURA, false, listOf("Aura", "Blazing", "Energy")),
-            EditionSpec("amoled_void", "Midnight AMOLED Void", WallpaperStyle.CANVAS_KANJI, true, listOf("Amoled", "Dark", "PitchBlack")),
-            EditionSpec("ki_sphere", "Supernova Ki Blast", WallpaperStyle.CANVAS_KI_SPHERE, true, listOf("KiSphere", "Supernova", "Blast")),
-            EditionSpec("energy_beam", "Ultimate Beam Surge", WallpaperStyle.CANVAS_BEAM, true, listOf("Beam", "Kamehameha", "Surge")),
-            EditionSpec("manga_sketch", "Manga Speedline Ink", WallpaperStyle.CANVAS_MANGA_SKETCH, true, listOf("Manga", "Speedline", "Monochrome")),
-            EditionSpec("cyber_scouter", "Capsule Scouter HUD", WallpaperStyle.CANVAS_CYBER_TECH, true, listOf("Scouter", "Cyber", "HUD")),
-            EditionSpec("lightning_storm", "Limit Break Thunderstorm", WallpaperStyle.CANVAS_LIGHTNING_STORM, true, listOf("Lightning", "Electric", "Storm")),
-            EditionSpec("cosmic_galaxy", "Celestial Galaxy Domain", WallpaperStyle.CANVAS_COSMIC_VOID, true, listOf("Cosmic", "Galaxy", "Nebula")),
-            EditionSpec("sacred_kanji", "Sacred Martial Kanji", WallpaperStyle.CANVAS_KANJI, false, listOf("Kanji", "MartialArts", "Emblem")),
-            EditionSpec("wasteland_horizon", "Battlefield Horizon", WallpaperStyle.CANVAS_SCENE, false, listOf("Wasteland", "Battlefield", "Sky")),
-            EditionSpec("dragon_summon", "Shenron Star Formation", WallpaperStyle.CANVAS_DRAGON_BALLS, true, listOf("DragonBalls", "Shenron", "Stars")),
-            EditionSpec("primal_heat", "Primal Battle Spirit", WallpaperStyle.CANVAS_AURA, false, listOf("Primal", "Battle", "Heat")),
-            EditionSpec("stardust_nova", "Stardust Particle Nova", WallpaperStyle.CANVAS_COSMIC_VOID, true, listOf("Stardust", "Particles", "Nova")),
-            EditionSpec("divine_wrath", "Divine Power Strike", WallpaperStyle.CANVAS_LIGHTNING_STORM, false, listOf("Divine", "Wrath", "Strike")),
-            EditionSpec("retro_cel", "90s Retro Anime Cel", WallpaperStyle.CANVAS_SCENE, false, listOf("Retro", "90s", "ClassicArt"))
+            EditionSpec("aura_flare", "Blazing Ki Flare", WallpaperStyle.CANVAS_AURA, false, "4K Ultra HD", listOf("Aura", "Blazing", "Energy")),
+            EditionSpec("amoled_void", "Midnight AMOLED Void", WallpaperStyle.CANVAS_KANJI, true, "4K Ultra HD", listOf("Amoled", "Dark", "PitchBlack")),
+            EditionSpec("ki_sphere", "Supernova Ki Blast", WallpaperStyle.CANVAS_KI_SPHERE, true, "2K Quad HD", listOf("KiSphere", "Supernova", "Blast")),
+            EditionSpec("energy_beam", "Ultimate Beam Surge", WallpaperStyle.CANVAS_BEAM, true, "4K Ultra HD", listOf("Beam", "Kamehameha", "Surge")),
+            EditionSpec("manga_sketch", "Manga Speedline Ink", WallpaperStyle.CANVAS_MANGA_SKETCH, true, "Full HD 1080p", listOf("Manga", "Speedline", "Monochrome")),
+            EditionSpec("cyber_scouter", "Capsule Scouter HUD", WallpaperStyle.CANVAS_CYBER_TECH, true, "2K Quad HD", listOf("Scouter", "Cyber", "HUD")),
+            EditionSpec("lightning_storm", "Limit Break Thunderstorm", WallpaperStyle.CANVAS_LIGHTNING_STORM, true, "4K Ultra HD", listOf("Lightning", "Electric", "Storm")),
+            EditionSpec("cosmic_galaxy", "Celestial Galaxy Domain", WallpaperStyle.CANVAS_COSMIC_VOID, true, "4K Ultra HD", listOf("Cosmic", "Galaxy", "Nebula")),
+            EditionSpec("sacred_kanji", "Sacred Martial Kanji", WallpaperStyle.CANVAS_KANJI, false, "Full HD 1080p", listOf("Kanji", "MartialArts", "Emblem")),
+            EditionSpec("wasteland_horizon", "Battlefield Horizon", WallpaperStyle.CANVAS_SCENE, false, "2K Quad HD", listOf("Wasteland", "Battlefield", "Sky")),
+            EditionSpec("dragon_summon", "Shenron Star Formation", WallpaperStyle.CANVAS_DRAGON_BALLS, true, "4K Ultra HD", listOf("DragonBalls", "Shenron", "Stars")),
+            EditionSpec("primal_heat", "Primal Battle Spirit", WallpaperStyle.CANVAS_AURA, false, "2K Quad HD", listOf("Primal", "Battle", "Heat")),
+            EditionSpec("stardust_nova", "Stardust Particle Nova", WallpaperStyle.CANVAS_COSMIC_VOID, true, "4K Ultra HD", listOf("Stardust", "Particles", "Nova")),
+            EditionSpec("divine_wrath", "Divine Power Strike", WallpaperStyle.CANVAS_LIGHTNING_STORM, false, "Full HD 1080p", listOf("Divine", "Wrath", "Strike")),
+            EditionSpec("retro_cel", "90s Retro Anime Cel", WallpaperStyle.CANVAS_SCENE, false, "Full HD 1080p", listOf("Retro", "90s", "ClassicArt"))
         )
 
         val ALL_WALLPAPERS: List<Wallpaper> = buildList {
@@ -241,7 +436,10 @@ class WallpaperRepository(context: Context) {
                     quote = "This is the power of Trust!",
                     tags = listOf("Ultra Instinct", "God Ki", "Silver Aura", "Silver Hair", "4K"),
                     isAmoled = true,
+                    isTrending = true,
+                    isFeatured = true,
                     description = "Son Goku achieving complete mastery of Ultra Instinct with shimmering silver aura and divine speed.",
+                    resolution = "4K Ultra HD",
                     downloadsCount = 28450,
                     likesCount = 14200
                 )
@@ -262,7 +460,10 @@ class WallpaperRepository(context: Context) {
                     quote = "A Saiyan's strength knows no limits!",
                     tags = listOf("Vegeta", "SSJ Blue", "Prince of Saiyans", "Royal Ki", "4K"),
                     isAmoled = true,
+                    isTrending = true,
+                    isFeatured = true,
                     description = "Prince Vegeta pushing past the boundaries of Super Saiyan Blue with intense sapphire aura and unbreakable pride.",
+                    resolution = "4K Ultra HD",
                     downloadsCount = 24100,
                     likesCount = 12310
                 )
@@ -283,7 +484,10 @@ class WallpaperRepository(context: Context) {
                     quote = "I won't let you hurt my family!",
                     tags = listOf("Gohan", "Beast", "Red Eyes", "Purple Gi", "Special Beam Cannon"),
                     isAmoled = true,
+                    isTrending = true,
+                    isFeatured = true,
                     description = "Son Gohan unleashing his latent inner beast with crimson pupils, sharp lavender spikes, and furious electrical aura.",
+                    resolution = "4K Ultra HD",
                     downloadsCount = 22890,
                     likesCount = 11650
                 )
@@ -304,7 +508,10 @@ class WallpaperRepository(context: Context) {
                     quote = "State your wish, and it shall be granted!",
                     tags = listOf("Shenron", "Dragon Balls", "Mythical", "Grant Wish", "Emerald"),
                     isAmoled = true,
+                    isTrending = true,
+                    isFeatured = true,
                     description = "The mythical green dragon Shenron soaring through stormy skies surrounded by the seven glowing Dragon Balls.",
+                    resolution = "4K Ultra HD",
                     downloadsCount = 29800,
                     likesCount = 15200
                 )
@@ -318,6 +525,9 @@ class WallpaperRepository(context: Context) {
                     val uniqueId = "${charProfile.id}_${edition.suffix}"
                     val uniqueTitle = "${charProfile.name} - ${edition.nameSuffix}"
                     val category = if (edition.isAmoled && counter % 3 == 0) WallpaperCategory.AMOLED else charProfile.category
+
+                    val isTrending = (counter % 7 == 0)
+                    val isFeatured = (counter % 19 == 0)
 
                     add(
                         Wallpaper(
@@ -337,10 +547,13 @@ class WallpaperRepository(context: Context) {
                             quote = charProfile.quote,
                             tags = charProfile.tags + edition.tags,
                             isAmoled = edition.isAmoled,
+                            isTrending = isTrending,
+                            isFeatured = isFeatured,
                             description = "${charProfile.name} in ${charProfile.form} state during the ${charProfile.saga}. Stylized in high-definition ${edition.nameSuffix} anime wallpaper format.",
-                            resolution = "1440 x 2560 Ultra HD",
+                            resolution = edition.resolution,
                             downloadsCount = 1200 + (counter * 37) % 8500,
-                            likesCount = 650 + (counter * 19) % 4300
+                            likesCount = 650 + (counter * 19) % 4300,
+                            createdTimestamp = System.currentTimeMillis() - (counter * 3600000L)
                         )
                     )
                     counter++

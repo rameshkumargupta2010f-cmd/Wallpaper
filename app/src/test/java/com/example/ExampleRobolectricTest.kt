@@ -42,4 +42,25 @@ class ExampleRobolectricTest {
     assertNotNull(gokuUi)
     assertEquals(WallpaperCategory.GOKU, gokuUi?.category)
   }
+
+  @Test
+  fun `verify repository dynamic CMS and utility features`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val repo = WallpaperRepository(context)
+
+    // Test random wallpaper
+    val randomWp = repo.getRandomWallpaper()
+    assertNotNull(randomWp)
+
+    // Test daily wallpaper
+    val dailyWp = repo.getDailyWallpaper()
+    assertNotNull(dailyWp)
+
+    // Test category counts
+    val counts = repo.getCategoryCounts()
+    assertTrue(counts.isNotEmpty())
+    assertTrue(counts[WallpaperCategory.ALL] ?: 0 >= 1000)
+    assertTrue(counts[WallpaperCategory.GOKU] ?: 0 >= 50)
+    assertTrue(counts[WallpaperCategory.VEGETA] ?: 0 >= 50)
+  }
 }
