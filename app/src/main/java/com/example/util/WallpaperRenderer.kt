@@ -90,6 +90,15 @@ object WallpaperRenderer {
         val bgDark = if (wallpaper.isAmoled) Color.rgb(2, 3, 5) else Color.rgb(10, 12, 18)
 
         when (wallpaper.styleType) {
+            WallpaperStyle.CANVAS_FACE_AND_BODY -> {
+                CharacterFigureRenderer.drawDualFaceAndBodyComposition(canvas, wallpaper, width, height, pColor, sColor, aColor, bgDark, paint)
+            }
+            WallpaperStyle.CANVAS_FULL_BODY_HERO -> {
+                CharacterFigureRenderer.drawFullBodyHeroicComposition(canvas, wallpaper, width, height, pColor, sColor, aColor, bgDark, paint)
+            }
+            WallpaperStyle.CANVAS_CINEMATIC_FACE -> {
+                CharacterFigureRenderer.drawCinematicFaceComposition(canvas, wallpaper, width, height, pColor, sColor, aColor, bgDark, paint)
+            }
             WallpaperStyle.CANVAS_KANJI -> {
                 drawKanjiWallpaper(canvas, wallpaper, width, height, pColor, sColor, aColor, bgDark, paint)
             }
@@ -191,24 +200,23 @@ object WallpaperRenderer {
 
         // Core Kanji in pure white
         paint.textSize = w * 0.43f
-        paint.color = Color.WHITE
+        paint.color = Color.argb(120, 255, 255, 255)
         canvas.drawText(displaySymbol, w * 0.5f, h * 0.545f, paint)
+
+        // Render Character Face & Full Body Stance in front of Kanji
+        val archetype = CharacterFigureRenderer.getArchetype(wp.character)
+        val palette = CharacterFigureRenderer.resolvePalette(wp, archetype)
+        CharacterFigureRenderer.drawCharacterFace(canvas, archetype, wp, w * 0.5f, h * 0.18f, w * 0.19f, palette, paint, isCloseUp = true)
+        CharacterFigureRenderer.drawCharacterWholeBody(canvas, archetype, wp, w * 0.5f, h * 0.68f, h * 0.44f, palette, paint)
 
         paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
         paint.textSize = w * 0.045f
-        paint.color = Color.argb(220, 255, 255, 255)
-        canvas.drawText(wp.form.uppercase(), w * 0.5f, h * 0.68f, paint)
+        paint.color = Color.WHITE
+        canvas.drawText(wp.form.uppercase(), w * 0.5f, h * 0.92f, paint)
 
-        paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
         paint.textSize = w * 0.032f
-        paint.color = Color.argb(150, 200, 205, 220)
-        canvas.drawText(wp.character.uppercase(), w * 0.5f, h * 0.715f, paint)
-
-        if (wp.quote.isNotEmpty()) {
-            paint.textSize = w * 0.026f
-            paint.color = Color.argb(120, 180, 185, 200)
-            canvas.drawText("\"${wp.quote.take(40)}\"", w * 0.5f, h * 0.88f, paint)
-        }
+        paint.color = Color.argb(220, Color.red(accent), Color.green(accent), Color.blue(accent))
+        canvas.drawText("${wp.character.uppercase()} • ${wp.resolution}", w * 0.5f, h * 0.955f, paint)
     }
 
     private fun drawAuraWallpaper(
@@ -302,16 +310,22 @@ object WallpaperRenderer {
         canvas.drawCircle(w * 0.5f, h * 0.58f, w * 0.25f, paint)
         paint.shader = null
 
+        // Render Character Face & Full Body Stance
+        val archetype = CharacterFigureRenderer.getArchetype(wp.character)
+        val palette = CharacterFigureRenderer.resolvePalette(wp, archetype)
+        CharacterFigureRenderer.drawCharacterFace(canvas, archetype, wp, w * 0.5f, h * 0.20f, w * 0.20f, palette, paint, isCloseUp = true)
+        CharacterFigureRenderer.drawCharacterWholeBody(canvas, archetype, wp, w * 0.5f, h * 0.68f, h * 0.44f, palette, paint)
+
         // Typography
         paint.textAlign = Paint.Align.CENTER
         paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-        paint.textSize = w * 0.052f
+        paint.textSize = w * 0.045f
         paint.color = Color.WHITE
-        canvas.drawText(wp.form.uppercase(), w * 0.5f, h * 0.78f, paint)
+        canvas.drawText(wp.form.uppercase(), w * 0.5f, h * 0.92f, paint)
 
-        paint.textSize = w * 0.035f
-        paint.color = Color.argb(190, Color.red(accent), Color.green(accent), Color.blue(accent))
-        canvas.drawText(wp.character.uppercase(), w * 0.5f, h * 0.82f, paint)
+        paint.textSize = w * 0.032f
+        paint.color = Color.argb(220, Color.red(accent), Color.green(accent), Color.blue(accent))
+        canvas.drawText("${wp.character.uppercase()} • ${wp.resolution}", w * 0.5f, h * 0.955f, paint)
     }
 
     private fun drawKiSphereWallpaper(
@@ -370,15 +384,21 @@ object WallpaperRenderer {
         canvas.drawCircle(sphereCenterX, sphereCenterY, sphereRadius, paint)
         paint.shader = null
 
+        // Render Character Face and Whole Body holding sphere
+        val archetypeSphere = CharacterFigureRenderer.getArchetype(wp.character)
+        val paletteSphere = CharacterFigureRenderer.resolvePalette(wp, archetypeSphere)
+        CharacterFigureRenderer.drawCharacterFace(canvas, archetypeSphere, wp, w * 0.5f, h * 0.18f, w * 0.18f, paletteSphere, paint, isCloseUp = true)
+        CharacterFigureRenderer.drawCharacterWholeBody(canvas, archetypeSphere, wp, w * 0.5f, h * 0.65f, h * 0.44f, paletteSphere, paint)
+
         paint.textAlign = Paint.Align.CENTER
         paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-        paint.textSize = w * 0.052f
+        paint.textSize = w * 0.045f
         paint.color = Color.WHITE
-        canvas.drawText(wp.title.uppercase(), w * 0.5f, h * 0.74f, paint)
+        canvas.drawText(wp.form.uppercase(), w * 0.5f, h * 0.92f, paint)
 
         paint.textSize = w * 0.032f
-        paint.color = Color.argb(180, Color.red(accent), Color.green(accent), Color.blue(accent))
-        canvas.drawText("${wp.character.uppercase()} • ${wp.saga.uppercase()}", w * 0.5f, h * 0.78f, paint)
+        paint.color = Color.argb(220, Color.red(accent), Color.green(accent), Color.blue(accent))
+        canvas.drawText("${wp.character.uppercase()} • ${wp.resolution}", w * 0.5f, h * 0.955f, paint)
     }
 
     private fun drawBeamWallpaper(
@@ -432,16 +452,22 @@ object WallpaperRenderer {
             canvas.drawOval(beamCenterX - rx, y - ry, beamCenterX + rx, y + ry, paint)
         }
 
+        // Render Character Face and Whole Body firing beam
+        val archetypeBeam = CharacterFigureRenderer.getArchetype(wp.character)
+        val paletteBeam = CharacterFigureRenderer.resolvePalette(wp, archetypeBeam)
+        CharacterFigureRenderer.drawCharacterFace(canvas, archetypeBeam, wp, w * 0.5f, h * 0.20f, w * 0.20f, paletteBeam, paint, isCloseUp = true)
+        CharacterFigureRenderer.drawCharacterWholeBody(canvas, archetypeBeam, wp, w * 0.5f, h * 0.68f, h * 0.44f, paletteBeam, paint)
+
         paint.style = Paint.Style.FILL
         paint.textAlign = Paint.Align.CENTER
         paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-        paint.textSize = w * 0.052f
+        paint.textSize = w * 0.045f
         paint.color = Color.WHITE
-        canvas.drawText(wp.title.uppercase(), w * 0.5f, h * 0.88f, paint)
+        canvas.drawText(wp.form.uppercase(), w * 0.5f, h * 0.92f, paint)
 
         paint.textSize = w * 0.032f
-        paint.color = Color.argb(180, Color.red(accent), Color.green(accent), Color.blue(accent))
-        canvas.drawText(wp.character.uppercase(), w * 0.5f, h * 0.915f, paint)
+        paint.color = Color.argb(220, Color.red(accent), Color.green(accent), Color.blue(accent))
+        canvas.drawText("${wp.character.uppercase()} • ${wp.resolution}", w * 0.5f, h * 0.955f, paint)
     }
 
     private fun drawDragonBallsWallpaper(

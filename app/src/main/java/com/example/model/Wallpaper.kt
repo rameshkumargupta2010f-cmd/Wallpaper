@@ -21,6 +21,9 @@ enum class WallpaperCategory(val displayName: String) {
 
 enum class WallpaperStyle(val label: String) {
     DRAWABLE_ASSET("Key Visual Art"),
+    CANVAS_FACE_AND_BODY("Face & Full Body Duo"),
+    CANVAS_FULL_BODY_HERO("Full Body Action Stance"),
+    CANVAS_CINEMATIC_FACE("Fierce Face Close-Up"),
     CANVAS_AURA("Neon Ki Aura"),
     CANVAS_KANJI("Kanji Emblem"),
     CANVAS_KI_SPHERE("Ki Sphere Supernova"),
@@ -42,6 +45,9 @@ enum class ResolutionFilter(val displayName: String) {
 
 enum class StyleFilter(val displayName: String) {
     ALL("All Art Styles"),
+    FACE_AND_BODY("Face & Full Body Duo"),
+    FULL_BODY("Full Body Hero Stance"),
+    FACE_PORTRAIT("Fierce Face Close-Up"),
     AURA("Neon Ki Auras"),
     AMOLED("AMOLED Pure Black"),
     BEAM("Kamehameha & Beams"),

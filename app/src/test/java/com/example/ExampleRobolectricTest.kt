@@ -63,4 +63,19 @@ class ExampleRobolectricTest {
     assertTrue(counts[WallpaperCategory.GOKU] ?: 0 >= 50)
     assertTrue(counts[WallpaperCategory.VEGETA] ?: 0 >= 50)
   }
+
+  @Test
+  fun `verify face and whole body wallpapers rendering`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val faceAndBodyWp = WallpaperRepository.ALL_WALLPAPERS.find {
+      it.styleType == com.example.model.WallpaperStyle.CANVAS_FACE_AND_BODY
+    }
+    assertNotNull("Should have wallpapers with Face & Body style", faceAndBodyWp)
+
+    // Verify thumbnail rendering works
+    val thumb = com.example.util.WallpaperRenderer.getThumbnailBitmap(context, faceAndBodyWp!!)
+    assertNotNull(thumb)
+    assertEquals(270, thumb.width)
+    assertEquals(480, thumb.height)
+  }
 }

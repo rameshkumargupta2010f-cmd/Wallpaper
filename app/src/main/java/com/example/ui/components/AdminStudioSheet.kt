@@ -84,7 +84,7 @@ fun AdminStudioSheet(
     var form by remember { mutableStateOf("Super Saiyan Blue") }
     var saga by remember { mutableStateOf("Tournament of Power") }
     var selectedCategory by remember { mutableStateOf(WallpaperCategory.GOKU) }
-    var selectedStyle by remember { mutableStateOf(WallpaperStyle.CANVAS_AURA) }
+    var selectedStyle by remember { mutableStateOf(WallpaperStyle.CANVAS_FACE_AND_BODY) }
     var resolution by remember { mutableStateOf("4K Ultra HD") }
     var quote by remember { mutableStateOf("") }
     var kanji by remember { mutableStateOf("氣") }

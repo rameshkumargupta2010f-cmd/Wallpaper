@@ -401,21 +401,21 @@ class WallpaperRepository(context: Context) {
         )
 
         private val EDITIONS: List<EditionSpec> = listOf(
-            EditionSpec("aura_flare", "Blazing Ki Flare", WallpaperStyle.CANVAS_AURA, false, "4K Ultra HD", listOf("Aura", "Blazing", "Energy")),
-            EditionSpec("amoled_void", "Midnight AMOLED Void", WallpaperStyle.CANVAS_KANJI, true, "4K Ultra HD", listOf("Amoled", "Dark", "PitchBlack")),
-            EditionSpec("ki_sphere", "Supernova Ki Blast", WallpaperStyle.CANVAS_KI_SPHERE, true, "2K Quad HD", listOf("KiSphere", "Supernova", "Blast")),
-            EditionSpec("energy_beam", "Ultimate Beam Surge", WallpaperStyle.CANVAS_BEAM, true, "4K Ultra HD", listOf("Beam", "Kamehameha", "Surge")),
-            EditionSpec("manga_sketch", "Manga Speedline Ink", WallpaperStyle.CANVAS_MANGA_SKETCH, true, "Full HD 1080p", listOf("Manga", "Speedline", "Monochrome")),
-            EditionSpec("cyber_scouter", "Capsule Scouter HUD", WallpaperStyle.CANVAS_CYBER_TECH, true, "2K Quad HD", listOf("Scouter", "Cyber", "HUD")),
-            EditionSpec("lightning_storm", "Limit Break Thunderstorm", WallpaperStyle.CANVAS_LIGHTNING_STORM, true, "4K Ultra HD", listOf("Lightning", "Electric", "Storm")),
-            EditionSpec("cosmic_galaxy", "Celestial Galaxy Domain", WallpaperStyle.CANVAS_COSMIC_VOID, true, "4K Ultra HD", listOf("Cosmic", "Galaxy", "Nebula")),
-            EditionSpec("sacred_kanji", "Sacred Martial Kanji", WallpaperStyle.CANVAS_KANJI, false, "Full HD 1080p", listOf("Kanji", "MartialArts", "Emblem")),
-            EditionSpec("wasteland_horizon", "Battlefield Horizon", WallpaperStyle.CANVAS_SCENE, false, "2K Quad HD", listOf("Wasteland", "Battlefield", "Sky")),
-            EditionSpec("dragon_summon", "Shenron Star Formation", WallpaperStyle.CANVAS_DRAGON_BALLS, true, "4K Ultra HD", listOf("DragonBalls", "Shenron", "Stars")),
-            EditionSpec("primal_heat", "Primal Battle Spirit", WallpaperStyle.CANVAS_AURA, false, "2K Quad HD", listOf("Primal", "Battle", "Heat")),
-            EditionSpec("stardust_nova", "Stardust Particle Nova", WallpaperStyle.CANVAS_COSMIC_VOID, true, "4K Ultra HD", listOf("Stardust", "Particles", "Nova")),
-            EditionSpec("divine_wrath", "Divine Power Strike", WallpaperStyle.CANVAS_LIGHTNING_STORM, false, "Full HD 1080p", listOf("Divine", "Wrath", "Strike")),
-            EditionSpec("retro_cel", "90s Retro Anime Cel", WallpaperStyle.CANVAS_SCENE, false, "Full HD 1080p", listOf("Retro", "90s", "ClassicArt"))
+            EditionSpec("face_and_body", "Face & Full Body Duo 4K", WallpaperStyle.CANVAS_FACE_AND_BODY, false, "4K Ultra HD", listOf("FaceAndBody", "Portrait", "FullBody", "4K")),
+            EditionSpec("full_body_stance", "Heroic Full Body Stance 4K", WallpaperStyle.CANVAS_FULL_BODY_HERO, false, "4K Ultra HD", listOf("FullBody", "HeroicStance", "Combat", "4K")),
+            EditionSpec("cinematic_face", "Fierce Face Close-Up 4K", WallpaperStyle.CANVAS_CINEMATIC_FACE, true, "4K Ultra HD", listOf("FaceCloseUp", "IntenseEyes", "Gaze", "4K")),
+            EditionSpec("dual_awakening", "Dual Perspective Awakening 4K", WallpaperStyle.CANVAS_FACE_AND_BODY, true, "4K Ultra HD", listOf("DualPerspective", "Face", "Body", "Awakening")),
+            EditionSpec("aura_flare", "Blazing Ki Flare Full Body", WallpaperStyle.CANVAS_AURA, false, "4K Ultra HD", listOf("Aura", "Blazing", "FullBody", "Energy")),
+            EditionSpec("amoled_dual", "Midnight AMOLED Face & Body", WallpaperStyle.CANVAS_FACE_AND_BODY, true, "4K Ultra HD", listOf("Amoled", "Dark", "FaceAndBody")),
+            EditionSpec("ki_sphere", "Supernova Ki Blast Stance", WallpaperStyle.CANVAS_KI_SPHERE, true, "2K Quad HD", listOf("KiSphere", "FullBody", "Supernova")),
+            EditionSpec("energy_beam", "Ultimate Beam Surge Pose", WallpaperStyle.CANVAS_BEAM, true, "4K Ultra HD", listOf("Beam", "Kamehameha", "FullBody", "Surge")),
+            EditionSpec("manga_sketch", "Manga Speedline Face & Body", WallpaperStyle.CANVAS_MANGA_SKETCH, true, "Full HD 1080p", listOf("Manga", "Speedline", "Monochrome", "FaceAndBody")),
+            EditionSpec("cyber_scouter", "Capsule Scouter HUD & Stance", WallpaperStyle.CANVAS_CYBER_TECH, true, "2K Quad HD", listOf("Scouter", "Cyber", "FaceAndBody", "HUD")),
+            EditionSpec("lightning_storm", "Limit Break Thunderstorm Body", WallpaperStyle.CANVAS_LIGHTNING_STORM, true, "4K Ultra HD", listOf("Lightning", "Electric", "FullBody", "Storm")),
+            EditionSpec("cosmic_galaxy", "Celestial Galaxy Face & Stance", WallpaperStyle.CANVAS_COSMIC_VOID, true, "4K Ultra HD", listOf("Cosmic", "Galaxy", "Nebula", "FaceAndBody")),
+            EditionSpec("sacred_kanji", "Sacred Martial Kanji & Body", WallpaperStyle.CANVAS_KANJI, false, "Full HD 1080p", listOf("Kanji", "MartialArts", "FullBody", "Emblem")),
+            EditionSpec("wasteland_horizon", "Battlefield Horizon Stance", WallpaperStyle.CANVAS_SCENE, false, "2K Quad HD", listOf("Wasteland", "Battlefield", "FullBody")),
+            EditionSpec("dragon_summon", "Shenron Star Formation Duo", WallpaperStyle.CANVAS_DRAGON_BALLS, true, "4K Ultra HD", listOf("DragonBalls", "Shenron", "FaceAndBody"))
         )
 
         val ALL_WALLPAPERS: List<Wallpaper> = buildList {

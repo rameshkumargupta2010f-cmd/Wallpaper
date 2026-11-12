@@ -154,6 +154,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // Style filter
             val matchesStyle = when (style) {
                 StyleFilter.ALL -> true
+                StyleFilter.FACE_AND_BODY -> wp.styleType == WallpaperStyle.CANVAS_FACE_AND_BODY
+                StyleFilter.FULL_BODY -> wp.styleType == WallpaperStyle.CANVAS_FULL_BODY_HERO
+                StyleFilter.FACE_PORTRAIT -> wp.styleType == WallpaperStyle.CANVAS_CINEMATIC_FACE
                 StyleFilter.AURA -> wp.styleType == WallpaperStyle.CANVAS_AURA
                 StyleFilter.AMOLED -> wp.isAmoled
                 StyleFilter.BEAM -> wp.styleType == WallpaperStyle.CANVAS_BEAM
