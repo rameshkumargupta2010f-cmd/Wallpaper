@@ -6,18 +6,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.example.model.Wallpaper
-import com.example.model.WallpaperStyle
 import com.example.util.WallpaperRenderer
 
 @Composable
 fun WallpaperThumbnail(
     wallpaper: Wallpaper,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    colorFilter: ColorFilter? = null
 ) {
     Box(modifier = modifier) {
         if (wallpaper.drawableResId != null) {
@@ -25,7 +26,8 @@ fun WallpaperThumbnail(
                 painter = painterResource(id = wallpaper.drawableResId),
                 contentDescription = wallpaper.title,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                colorFilter = colorFilter
             )
         } else {
             Canvas(modifier = Modifier.fillMaxSize()) {

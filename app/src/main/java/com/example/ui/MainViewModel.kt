@@ -133,13 +133,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 else -> wp.category == cat
             }
 
-            // Section filter (Trending, Most Downloaded, Recent)
+            // Section filter (Full Body Realistic, Trending, Top Saved, Latest)
             val matchesSection = when (section) {
                 HomeSection.ALL -> true
-                HomeSection.TRENDING -> wp.isTrending || wp.downloadsCount > 5000
-                HomeSection.MOST_DOWNLOADED -> wp.downloadsCount > 4000
+                HomeSection.CINEMATIC -> wp.tags.any { it.contains("FullBody", ignoreCase = true) }
+                HomeSection.TRENDING -> wp.isTrending || wp.downloadsCount > 25000
+                HomeSection.MOST_DOWNLOADED -> wp.downloadsCount > 24000
                 HomeSection.RECENT -> wp.createdTimestamp > (System.currentTimeMillis() - 7 * 86400000L)
-                else -> true
             }
 
             // Resolution filter
@@ -148,24 +148,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 ResolutionFilter.RES_4K -> wp.resolution.contains("4K")
                 ResolutionFilter.RES_2K -> wp.resolution.contains("2K")
                 ResolutionFilter.RES_FHD -> wp.resolution.contains("1080p") || wp.resolution.contains("Full HD")
-                else -> true
             }
 
             // Style filter
             val matchesStyle = when (style) {
                 StyleFilter.ALL -> true
-                StyleFilter.FACE_AND_BODY -> wp.styleType == WallpaperStyle.CANVAS_FACE_AND_BODY
-                StyleFilter.FULL_BODY -> wp.styleType == WallpaperStyle.CANVAS_FULL_BODY_HERO
-                StyleFilter.FACE_PORTRAIT -> wp.styleType == WallpaperStyle.CANVAS_CINEMATIC_FACE
-                StyleFilter.AURA -> wp.styleType == WallpaperStyle.CANVAS_AURA
+                StyleFilter.FULL_BODY -> wp.tags.any { it.contains("FullBody", ignoreCase = true) }
+                StyleFilter.DIVINE_AURA -> wp.tags.any { it.contains("GodKi", ignoreCase = true) || it.contains("Ultra", ignoreCase = true) || it.contains("Blue", ignoreCase = true) }
+                StyleFilter.VILLAIN_POWER -> wp.tags.any { it.contains("Villain", ignoreCase = true) } || wp.category == WallpaperCategory.VILLAINS
                 StyleFilter.AMOLED -> wp.isAmoled
-                StyleFilter.BEAM -> wp.styleType == WallpaperStyle.CANVAS_BEAM
-                StyleFilter.KI_SPHERE -> wp.styleType == WallpaperStyle.CANVAS_KI_SPHERE
-                StyleFilter.MANGA -> wp.styleType == WallpaperStyle.CANVAS_MANGA_SKETCH
-                StyleFilter.CYBER -> wp.styleType == WallpaperStyle.CANVAS_CYBER_TECH
-                StyleFilter.LIGHTNING -> wp.styleType == WallpaperStyle.CANVAS_LIGHTNING_STORM
-                StyleFilter.COSMIC -> wp.styleType == WallpaperStyle.CANVAS_COSMIC_VOID
-                else -> true
             }
 
             // Search query filter

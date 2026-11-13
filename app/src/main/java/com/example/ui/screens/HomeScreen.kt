@@ -165,7 +165,7 @@ fun HomeScreen(
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text = "1,100+ Offline Ultra HD Library",
+                        text = "Curated 4K Realistic Collection",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
@@ -301,7 +301,7 @@ fun HomeScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = onSearchQueryChanged,
-                    placeholder = { Text("Search 1,100+ Goku, Vegeta, Beast, Broly, Sagas...", color = Color.Gray, fontSize = 13.sp) },
+                    placeholder = { Text("Search Goku, Vegeta, Trunks, Broly, Beerus...", color = Color.Gray, fontSize = 13.sp) },
                     singleLine = true,
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -600,7 +600,7 @@ private fun FeaturedHeroCarousel(
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "FEATURED SAGA LEGENDS",
+            text = "CINEMATIC REALISTIC LEGENDS",
             fontSize = 12.sp,
             fontWeight = FontWeight.Black,
             color = MaterialTheme.colorScheme.primary,

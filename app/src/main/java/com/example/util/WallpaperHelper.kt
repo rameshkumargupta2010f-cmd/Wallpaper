@@ -25,9 +25,19 @@ object WallpaperHelper {
      * Downloads and saves the wallpaper to the device's public Pictures/DragonWallpapers folder.
      * Complies with modern Android scoped storage policies (zero permissions needed on Android 10+).
      */
-    suspend fun saveWallpaperToGallery(context: Context, wallpaper: Wallpaper): Result<Uri> = withContext(Dispatchers.IO) {
+    suspend fun saveWallpaperToGallery(
+        context: Context,
+        wallpaper: Wallpaper,
+        tonePreset: com.example.model.RealisticTonePreset = com.example.model.RealisticTonePreset.STUDIO_RAW
+    ): Result<Uri> = withContext(Dispatchers.IO) {
         try {
-            val bitmap = WallpaperRenderer.createFullResolutionBitmap(context, wallpaper, 1440, 2560)
+            val bitmap = WallpaperRenderer.createFullResolutionBitmap(
+                context = context,
+                wallpaper = wallpaper,
+                width = 1440,
+                height = 2560,
+                tonePreset = tonePreset
+            )
             val fileName = "DragonBall_${sanitize(wallpaper.character)}_${sanitize(wallpaper.title)}_${System.currentTimeMillis()}.png"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -79,10 +89,17 @@ object WallpaperHelper {
     suspend fun applyWallpaper(
         context: Context,
         wallpaper: Wallpaper,
-        target: WallpaperScreenTarget
+        target: WallpaperScreenTarget,
+        tonePreset: com.example.model.RealisticTonePreset = com.example.model.RealisticTonePreset.STUDIO_RAW
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val bitmap = WallpaperRenderer.createFullResolutionBitmap(context, wallpaper, 1440, 2560)
+            val bitmap = WallpaperRenderer.createFullResolutionBitmap(
+                context = context,
+                wallpaper = wallpaper,
+                width = 1440,
+                height = 2560,
+                tonePreset = tonePreset
+            )
             val wallpaperManager = WallpaperManager.getInstance(context)
 
             val flag = when (target) {

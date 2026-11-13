@@ -16,9 +16,10 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * High-performance vector canvas renderer for Dragon Ball characters.
- * Draws detailed character faces (facial structure, fierce eyes, signature hair)
- * and whole heroic bodies (muscular anatomy, martial gi/armor, power stance, explosive aura).
+ * Cinematic Realistic Anime Character Renderer for Dragon Ball Wallpapers.
+ * Renders movie-quality anime visuals: volumetric 3D shading, dynamic rim lighting,
+ * multi-layered realistic hair with gloss bands, hyper-detailed anime eyes,
+ * anatomically sculpted muscular bodies, and atmospheric cinematic lighting.
  */
 object CharacterFigureRenderer {
 
@@ -61,24 +62,30 @@ object CharacterFigureRenderer {
         }
     }
 
-    data class CharacterPalette(
-        val hairColor: Int,
+    data class RealisticPalette(
+        val hairBase: Int,
+        val hairShadow: Int,
         val hairHighlight: Int,
-        val eyeColor: Int,
-        val skinColor: Int,
+        val rimLight: Int,
+        val eyeCore: Int,
+        val eyeVibrant: Int,
+        val skinBase: Int,
         val skinShadow: Int,
-        val primaryAttire: Int,
-        val secondaryAttire: Int,
+        val skinHighlight: Int,
+        val attireBase: Int,
+        val attireShadow: Int,
+        val accentAttire: Int,
+        val accentShadow: Int,
         val auraCore: Int,
-        val auraGlow: Int
+        val auraGlow: Int,
+        val auraDeep: Int
     )
 
-    fun resolvePalette(wp: Wallpaper, archetype: CharacterArchetype): CharacterPalette {
+    fun resolvePalette(wp: Wallpaper, archetype: CharacterArchetype): RealisticPalette {
         val formLower = wp.form.lowercase()
         val titleLower = wp.title.lowercase()
         val p = (wp.primaryColor or 0xFF000000).toInt()
         val s = (wp.secondaryColor or 0xFF000000).toInt()
-        val a = (wp.accentColor or 0xFF000000).toInt()
 
         val isSilver = formLower.contains("ultra instinct") || formLower.contains("beast") || formLower.contains("silver")
         val isBlue = formLower.contains("blue") || formLower.contains("ssgss")
@@ -88,97 +95,89 @@ object CharacterFigureRenderer {
         val isGold = formLower.contains("super saiyan") || formLower.contains("ssj") || formLower.contains("golden")
         val isGreen = formLower.contains("legendary") || formLower.contains("broly") || formLower.contains("lssj")
 
-        val hairColor = when {
-            isSilver -> Color.rgb(235, 240, 250)
-            isBlue -> Color.rgb(0, 229, 255)
-            isGod -> Color.rgb(255, 23, 68)
-            isEgo -> Color.rgb(186, 104, 200)
-            isRose -> Color.rgb(255, 128, 171)
-            isGreen -> Color.rgb(118, 255, 3)
-            isGold -> Color.rgb(255, 214, 0)
-            archetype == CharacterArchetype.NAMEKIAN_PICCOLO -> Color.rgb(76, 175, 80)
-            archetype == CharacterArchetype.BIO_FRIEZA -> Color.rgb(220, 210, 245)
-            archetype == CharacterArchetype.BIO_CELL -> Color.rgb(30, 30, 30)
-            archetype == CharacterArchetype.MAJIN_BUU -> Color.rgb(244, 143, 177)
-            archetype == CharacterArchetype.DEITY_BEERUS -> Color.rgb(156, 110, 180)
-            archetype == CharacterArchetype.DEITY_WHIS -> Color.rgb(245, 245, 255)
-            archetype == CharacterArchetype.DRAGON_SHENRON -> Color.rgb(0, 200, 83)
-            else -> Color.rgb(25, 25, 30)
+        // Hair Palette
+        val (hairBase, hairShadow, hairHighlight, rimLight) = when {
+            isSilver -> Quad(Color.rgb(235, 240, 250), Color.rgb(150, 165, 185), Color.rgb(255, 255, 255), Color.rgb(200, 230, 255))
+            isBlue -> Quad(Color.rgb(0, 215, 255), Color.rgb(0, 110, 200), Color.rgb(200, 250, 255), Color.rgb(0, 250, 255))
+            isGod -> Quad(Color.rgb(255, 30, 80), Color.rgb(180, 10, 40), Color.rgb(255, 180, 200), Color.rgb(255, 100, 140))
+            isEgo -> Quad(Color.rgb(186, 104, 200), Color.rgb(110, 45, 130), Color.rgb(235, 190, 245), Color.rgb(220, 120, 240))
+            isRose -> Quad(Color.rgb(255, 130, 175), Color.rgb(175, 50, 100), Color.rgb(255, 210, 230), Color.rgb(255, 170, 210))
+            isGreen -> Quad(Color.rgb(120, 255, 10), Color.rgb(60, 160, 0), Color.rgb(220, 255, 160), Color.rgb(160, 255, 50))
+            isGold -> Quad(Color.rgb(255, 220, 0), Color.rgb(195, 135, 0), Color.rgb(255, 250, 180), Color.rgb(255, 235, 80))
+            archetype == CharacterArchetype.NAMEKIAN_PICCOLO -> Quad(Color.rgb(76, 175, 80), Color.rgb(46, 125, 50), Color.rgb(165, 214, 167), Color.rgb(129, 199, 132))
+            archetype == CharacterArchetype.BIO_FRIEZA -> Quad(Color.rgb(240, 235, 250), Color.rgb(160, 145, 180), Color.rgb(255, 255, 255), Color.rgb(210, 180, 240))
+            archetype == CharacterArchetype.BIO_CELL -> Quad(Color.rgb(35, 35, 40), Color.rgb(15, 15, 20), Color.rgb(100, 100, 110), Color.rgb(76, 175, 80))
+            archetype == CharacterArchetype.MAJIN_BUU -> Quad(Color.rgb(244, 143, 177), Color.rgb(194, 24, 91), Color.rgb(252, 228, 236), Color.rgb(255, 180, 205))
+            archetype == CharacterArchetype.DEITY_BEERUS -> Quad(Color.rgb(156, 110, 180), Color.rgb(95, 60, 120), Color.rgb(205, 170, 225), Color.rgb(0, 229, 255))
+            archetype == CharacterArchetype.DEITY_WHIS -> Quad(Color.rgb(245, 245, 255), Color.rgb(170, 175, 195), Color.rgb(255, 255, 255), Color.rgb(129, 212, 250))
+            archetype == CharacterArchetype.DRAGON_SHENRON -> Quad(Color.rgb(0, 200, 83), Color.rgb(0, 105, 40), Color.rgb(120, 255, 170), Color.rgb(255, 214, 0))
+            else -> Quad(Color.rgb(25, 25, 30), Color.rgb(10, 10, 15), Color.rgb(80, 85, 100), Color.rgb(180, 200, 230))
         }
 
-        val eyeColor = when {
-            isSilver -> Color.rgb(220, 225, 235)
-            isBlue -> Color.rgb(0, 176, 255)
-            isGod -> Color.rgb(255, 23, 68)
-            isEgo -> Color.rgb(213, 0, 249)
-            isRose -> Color.rgb(170, 0, 255)
-            isGreen -> Color.rgb(178, 255, 89)
-            isGold -> Color.rgb(0, 230, 118)
-            archetype == CharacterArchetype.BIO_FRIEZA -> Color.rgb(255, 23, 68)
-            archetype == CharacterArchetype.BIO_CELL -> Color.rgb(255, 214, 0)
-            archetype == CharacterArchetype.DEITY_BEERUS -> Color.rgb(255, 235, 59)
-            archetype == CharacterArchetype.DRAGON_SHENRON -> Color.rgb(255, 23, 68)
-            else -> Color.rgb(33, 33, 33)
+        // Realistic Eye Colors
+        val (eyeCore, eyeVibrant) = when {
+            isSilver -> Pair(Color.rgb(255, 255, 255), Color.rgb(200, 215, 235))
+            isBlue -> Pair(Color.rgb(200, 250, 255), Color.rgb(0, 180, 255))
+            isGod -> Pair(Color.rgb(255, 200, 215), Color.rgb(255, 23, 68))
+            isEgo -> Pair(Color.rgb(245, 200, 255), Color.rgb(213, 0, 249))
+            isRose -> Pair(Color.rgb(255, 210, 240), Color.rgb(170, 0, 255))
+            isGreen -> Pair(Color.rgb(230, 255, 200), Color.rgb(140, 255, 40))
+            isGold -> Pair(Color.rgb(210, 255, 220), Color.rgb(0, 230, 118))
+            archetype == CharacterArchetype.BIO_FRIEZA -> Pair(Color.rgb(255, 190, 200), Color.rgb(230, 20, 60))
+            archetype == CharacterArchetype.BIO_CELL -> Pair(Color.rgb(255, 245, 180), Color.rgb(255, 214, 0))
+            archetype == CharacterArchetype.DEITY_BEERUS -> Pair(Color.rgb(255, 255, 200), Color.rgb(255, 235, 59))
+            archetype == CharacterArchetype.DRAGON_SHENRON -> Pair(Color.rgb(255, 200, 200), Color.rgb(255, 20, 40))
+            else -> Pair(Color.rgb(80, 80, 85), Color.rgb(25, 25, 30))
         }
 
-        val skinColor = when (archetype) {
-            CharacterArchetype.NAMEKIAN_PICCOLO -> Color.rgb(102, 187, 106)
-            CharacterArchetype.BIO_FRIEZA -> Color.rgb(245, 240, 255)
-            CharacterArchetype.MAJIN_BUU -> Color.rgb(244, 143, 177)
-            CharacterArchetype.DEITY_BEERUS -> Color.rgb(179, 136, 200)
-            CharacterArchetype.DEITY_WHIS -> Color.rgb(129, 212, 250)
-            CharacterArchetype.DRAGON_SHENRON -> Color.rgb(0, 200, 83)
-            else -> Color.rgb(255, 218, 185)
+        // Realistic Anime Skin (Warm base, rich crimson-amber shadow, soft specular highlight)
+        val (skinBase, skinShadow, skinHighlight) = when (archetype) {
+            CharacterArchetype.NAMEKIAN_PICCOLO -> Triple(Color.rgb(102, 187, 106), Color.rgb(46, 125, 50), Color.rgb(165, 214, 167))
+            CharacterArchetype.BIO_FRIEZA -> Triple(Color.rgb(245, 240, 255), Color.rgb(179, 157, 219), Color.rgb(255, 255, 255))
+            CharacterArchetype.MAJIN_BUU -> Triple(Color.rgb(244, 143, 177), Color.rgb(194, 24, 91), Color.rgb(252, 228, 236))
+            CharacterArchetype.DEITY_BEERUS -> Triple(Color.rgb(179, 136, 200), Color.rgb(106, 65, 130), Color.rgb(215, 180, 235))
+            CharacterArchetype.DEITY_WHIS -> Triple(Color.rgb(129, 212, 250), Color.rgb(79, 195, 247), Color.rgb(210, 240, 255))
+            CharacterArchetype.DRAGON_SHENRON -> Triple(Color.rgb(0, 200, 83), Color.rgb(0, 105, 40), Color.rgb(110, 255, 165))
+            else -> Triple(Color.rgb(255, 218, 185), Color.rgb(210, 140, 100), Color.rgb(255, 240, 225))
         }
 
-        val skinShadow = when (archetype) {
-            CharacterArchetype.NAMEKIAN_PICCOLO -> Color.rgb(56, 142, 60)
-            CharacterArchetype.BIO_FRIEZA -> Color.rgb(179, 157, 219)
-            CharacterArchetype.MAJIN_BUU -> Color.rgb(233, 30, 99)
-            CharacterArchetype.DEITY_BEERUS -> Color.rgb(123, 80, 145)
-            CharacterArchetype.DEITY_WHIS -> Color.rgb(79, 195, 247)
-            CharacterArchetype.DRAGON_SHENRON -> Color.rgb(0, 121, 107)
-            else -> Color.rgb(224, 168, 130)
+        // Realistic Attire Palette with Cast Shadows
+        val (attireBase, attireShadow, accentAttire, accentShadow) = when (archetype) {
+            CharacterArchetype.SAIYAN_VEGETA -> Quad(Color.rgb(21, 80, 165), Color.rgb(10, 40, 95), Color.rgb(245, 245, 250), Color.rgb(160, 165, 180))
+            CharacterArchetype.NAMEKIAN_PICCOLO -> Quad(Color.rgb(106, 27, 154), Color.rgb(60, 15, 90), Color.rgb(245, 245, 250), Color.rgb(170, 175, 190))
+            CharacterArchetype.SAIYAN_TRUNKS -> Quad(Color.rgb(40, 53, 147), Color.rgb(20, 25, 85), Color.rgb(255, 214, 0), Color.rgb(180, 140, 0))
+            CharacterArchetype.SAIYAN_FUSION -> if (titleLower.contains("gogeta")) {
+                Quad(Color.rgb(25, 25, 30), Color.rgb(10, 10, 15), Color.rgb(255, 145, 0), Color.rgb(180, 90, 0))
+            } else {
+                Quad(Color.rgb(25, 100, 190), Color.rgb(12, 50, 110), Color.rgb(255, 110, 0), Color.rgb(170, 70, 0))
+            }
+            CharacterArchetype.BIO_FRIEZA -> Quad(Color.rgb(240, 240, 245), Color.rgb(160, 160, 170), Color.rgb(142, 36, 170), Color.rgb(85, 20, 105))
+            CharacterArchetype.BIO_CELL -> Quad(Color.rgb(46, 125, 50), Color.rgb(25, 75, 30), Color.rgb(25, 25, 30), Color.rgb(10, 10, 15))
+            CharacterArchetype.MAJIN_BUU -> Quad(Color.rgb(245, 245, 245), Color.rgb(170, 170, 180), Color.rgb(255, 214, 0), Color.rgb(180, 140, 0))
+            else -> Quad(Color.rgb(245, 110, 0), Color.rgb(170, 60, 0), Color.rgb(25, 100, 190), Color.rgb(12, 50, 110))
         }
 
-        val primaryAttire = when (archetype) {
-            CharacterArchetype.SAIYAN_VEGETA -> Color.rgb(21, 101, 192)
-            CharacterArchetype.NAMEKIAN_PICCOLO -> Color.rgb(106, 27, 154)
-            CharacterArchetype.SAIYAN_TRUNKS -> Color.rgb(40, 53, 147)
-            CharacterArchetype.SAIYAN_FUSION -> if (titleLower.contains("gogeta")) Color.rgb(20, 20, 25) else Color.rgb(25, 118, 210)
-            CharacterArchetype.BIO_FRIEZA -> Color.rgb(240, 240, 245)
-            CharacterArchetype.BIO_CELL -> Color.rgb(46, 125, 50)
-            CharacterArchetype.MAJIN_BUU -> Color.rgb(245, 245, 245)
-            CharacterArchetype.DEITY_BEERUS -> Color.rgb(21, 21, 21)
-            CharacterArchetype.DEITY_WHIS -> Color.rgb(183, 28, 28)
-            else -> Color.rgb(245, 124, 0) // Classic Goku orange
-        }
-
-        val secondaryAttire = when (archetype) {
-            CharacterArchetype.SAIYAN_VEGETA -> Color.rgb(240, 240, 245) // White armor
-            CharacterArchetype.NAMEKIAN_PICCOLO -> Color.rgb(245, 245, 250) // White cape
-            CharacterArchetype.SAIYAN_TRUNKS -> Color.rgb(255, 214, 0) // Sword strap / yellow boots
-            CharacterArchetype.SAIYAN_FUSION -> Color.rgb(255, 145, 0) // Orange puffy neck
-            CharacterArchetype.BIO_FRIEZA -> Color.rgb(142, 36, 170) // Purple plates
-            CharacterArchetype.BIO_CELL -> Color.rgb(20, 20, 20) // Black wings
-            CharacterArchetype.MAJIN_BUU -> Color.rgb(255, 214, 0) // Gold M belt
-            CharacterArchetype.DEITY_BEERUS -> Color.rgb(0, 188, 212) // Cyan collar
-            CharacterArchetype.DEITY_WHIS -> Color.rgb(21, 21, 21)
-            else -> Color.rgb(25, 118, 210) // Blue undershirt & belt
-        }
-
-        return CharacterPalette(
-            hairColor = hairColor,
-            hairHighlight = Color.argb(160, 255, 255, 255),
-            eyeColor = eyeColor,
-            skinColor = skinColor,
+        return RealisticPalette(
+            hairBase = hairBase,
+            hairShadow = hairShadow,
+            hairHighlight = hairHighlight,
+            rimLight = rimLight,
+            eyeCore = eyeCore,
+            eyeVibrant = eyeVibrant,
+            skinBase = skinBase,
             skinShadow = skinShadow,
-            primaryAttire = primaryAttire,
-            secondaryAttire = secondaryAttire,
+            skinHighlight = skinHighlight,
+            attireBase = attireBase,
+            attireShadow = attireShadow,
+            accentAttire = accentAttire,
+            accentShadow = accentShadow,
             auraCore = if (isSilver) Color.rgb(240, 245, 255) else p,
-            auraGlow = if (isBlue) Color.rgb(0, 229, 255) else s
+            auraGlow = if (isBlue) Color.rgb(0, 229, 255) else s,
+            auraDeep = Color.argb(40, Color.red(p), Color.green(p), Color.blue(p))
         )
     }
+
+    private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
     /**
      * Masterpiece Composition: Upper Face Close-up + Lower Whole Body Heroic Stance!
@@ -197,79 +196,48 @@ object CharacterFigureRenderer {
         val archetype = getArchetype(wp.character)
         val palette = resolvePalette(wp, archetype)
 
-        // 1. Deep dynamic background with cosmic ki nebula
-        val bgShader = LinearGradient(
-            0f, 0f, 0f, h.toFloat(),
-            intArrayOf(bgDark, Color.argb(120, Color.red(primary), Color.green(primary), Color.blue(primary)), bgDark),
+        // 1. Cinematic Volumetric Background
+        drawCinematicBackground(canvas, w, h, wp, palette, bgDark, paint)
+
+        // 2. UPPER HALF: Realistic Face Close-up with Volumetric Lighting & Glowing Eyes
+        val faceCx = w * 0.5f
+        val faceCy = h * 0.22f
+        val faceR = w * 0.25f
+
+        // Volumetric Head Aura Bloom
+        val headAuraShader = RadialGradient(
+            faceCx, faceCy, faceR * 2.2f,
+            intArrayOf(
+                Color.argb(140, Color.red(palette.auraCore), Color.green(palette.auraCore), Color.blue(palette.auraCore)),
+                Color.argb(70, Color.red(palette.auraGlow), Color.green(palette.auraGlow), Color.blue(palette.auraGlow)),
+                Color.TRANSPARENT
+            ),
             floatArrayOf(0f, 0.45f, 1f),
             Shader.TileMode.CLAMP
         )
         paint.style = Paint.Style.FILL
-        paint.shader = bgShader
-        canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
+        paint.shader = headAuraShader
+        canvas.drawCircle(faceCx, faceCy, faceR * 2.2f, paint)
         paint.shader = null
 
-        // Dramatic speedlines radiating from center rift
-        val rand = Random(wp.id.hashCode())
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 1.5f
-        for (i in 0..30) {
-            val angle = rand.nextFloat() * 2 * PI.toFloat()
-            val startR = w * 0.15f
-            val endR = w * 0.9f
-            val x1 = w * 0.5f + cos(angle) * startR
-            val y1 = h * 0.46f + sin(angle) * startR
-            val x2 = w * 0.5f + cos(angle) * endR
-            val y2 = h * 0.46f + sin(angle) * endR
-            val alpha = 20 + rand.nextInt(50)
-            paint.color = Color.argb(alpha, Color.red(secondary), Color.green(secondary), Color.blue(secondary))
-            canvas.drawLine(x1, y1, x2, y2, paint)
-        }
+        drawRealisticFace(canvas, archetype, wp, faceCx, faceCy, faceR, palette, paint, isMacro = true)
 
-        // Floating energy sparks in space
-        paint.style = Paint.Style.FILL
-        for (i in 0..40) {
-            val px = rand.nextFloat() * w
-            val py = rand.nextFloat() * h
-            val rad = 1f + rand.nextFloat() * 3f
-            paint.color = Color.argb(40 + rand.nextInt(120), Color.red(accent), Color.green(accent), Color.blue(accent))
-            canvas.drawCircle(px, py, rad, paint)
-        }
+        // 3. MIDDLE DIVIDER: Radiant Energy Slash & Golden Kanji Seal
+        drawEnergyRiftDivider(canvas, w, h, wp, palette, paint)
 
-        // 2. UPPER HALF: Epic Close-up of Character Face (with glowing eyes and signature hair)
-        val faceCx = w * 0.5f
-        val faceCy = h * 0.22f
-        val faceR = w * 0.24f
-
-        // Soft backglow behind head
-        val headGlowShader = RadialGradient(
-            faceCx, faceCy, faceR * 1.8f,
-            intArrayOf(Color.argb(110, Color.red(palette.auraCore), Color.green(palette.auraCore), Color.blue(palette.auraCore)), Color.TRANSPARENT),
-            null,
-            Shader.TileMode.CLAMP
-        )
-        paint.shader = headGlowShader
-        canvas.drawCircle(faceCx, faceCy, faceR * 1.8f, paint)
-        paint.shader = null
-
-        drawCharacterFace(canvas, archetype, wp, faceCx, faceCy, faceR, palette, paint, isCloseUp = true)
-
-        // 3. MIDDLE DIVIDER: Radiant Energy Rift & Kanji Crest
-        drawEnergyRiftDivider(canvas, w, h, wp, palette, primary, accent, paint)
-
-        // 4. LOWER HALF: Full Body Heroic Combat Stance (Muscular anatomy, attire, boots, explosive aura)
+        // 4. LOWER HALF: Realistic Muscular Full Body in Action Stance with Aura & Ground Lighting
         val bodyCx = w * 0.5f
-        val bodyCy = h * 0.73f
+        val bodyCy = h * 0.74f
         val bodyH = h * 0.42f
 
-        drawCharacterWholeBody(canvas, archetype, wp, bodyCx, bodyCy, bodyH, palette, paint)
+        drawRealisticWholeBody(canvas, archetype, wp, bodyCx, bodyCy, bodyH, palette, paint)
 
-        // 5. Heroic Character Banner Footer
-        drawBannerFooter(canvas, w, h, wp, accent, paint)
+        // 5. Cinematic Movie-Grade Footer Banner
+        drawCinematicFooter(canvas, w, h, wp, palette, paint)
     }
 
     /**
-     * Heroic Full Body Focus Wallpaper
+     * Full Body Focus Wallpaper
      */
     fun drawFullBodyHeroicComposition(
         canvas: Canvas,
@@ -285,48 +253,28 @@ object CharacterFigureRenderer {
         val archetype = getArchetype(wp.character)
         val palette = resolvePalette(wp, archetype)
 
-        // Aura burst background
-        val bgShader = RadialGradient(
-            w * 0.5f, h * 0.55f, h * 0.65f,
-            intArrayOf(Color.argb(140, Color.red(primary), Color.green(primary), Color.blue(primary)), bgDark),
-            floatArrayOf(0f, 1f),
-            Shader.TileMode.CLAMP
-        )
-        paint.style = Paint.Style.FILL
-        paint.shader = bgShader
-        canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
-        paint.shader = null
+        drawCinematicBackground(canvas, w, h, wp, palette, bgDark, paint)
 
-        // High vertical lightning forks
-        val rand = Random(wp.id.hashCode() + 99)
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 3f
-        for (i in 0..4) {
-            paint.color = Color.argb(180, 255, 255, 255)
-            drawLightningBolt(canvas, (0.15f + rand.nextFloat() * 0.7f) * w, 0f, (0.2f + rand.nextFloat() * 0.6f) * w, h * 0.9f, rand, paint)
-        }
-
-        // Concentrated Ki Sphere in background
+        // Volumetric Central Ki Core
         val sphereShader = RadialGradient(
-            w * 0.5f, h * 0.35f, w * 0.32f,
+            w * 0.5f, h * 0.55f, w * 0.45f,
             intArrayOf(Color.WHITE, palette.auraCore, palette.auraGlow, Color.TRANSPARENT),
-            floatArrayOf(0f, 0.25f, 0.7f, 1f),
+            floatArrayOf(0f, 0.2f, 0.6f, 1f),
             Shader.TileMode.CLAMP
         )
         paint.style = Paint.Style.FILL
         paint.shader = sphereShader
-        canvas.drawCircle(w * 0.5f, h * 0.35f, w * 0.32f, paint)
+        canvas.drawCircle(w * 0.5f, h * 0.55f, w * 0.45f, paint)
         paint.shader = null
 
-        // Large full body figure in dynamic power stance
-        drawCharacterWholeBody(canvas, archetype, wp, w * 0.5f, h * 0.58f, h * 0.62f, palette, paint)
+        // Full Body with heightened scale
+        drawRealisticWholeBody(canvas, archetype, wp, w * 0.5f, h * 0.58f, h * 0.62f, palette, paint)
 
-        // Banner footer
-        drawBannerFooter(canvas, w, h, wp, accent, paint)
+        drawCinematicFooter(canvas, w, h, wp, palette, paint)
     }
 
     /**
-     * Fierce Face Close-Up Focus Wallpaper
+     * Cinematic Face Close-Up Focus Wallpaper
      */
     fun drawCinematicFaceComposition(
         canvas: Canvas,
@@ -342,43 +290,16 @@ object CharacterFigureRenderer {
         val archetype = getArchetype(wp.character)
         val palette = resolvePalette(wp, archetype)
 
-        // Dark moody background with dramatic side glow
-        paint.style = Paint.Style.FILL
-        val bgShader = LinearGradient(
-            0f, 0f, w.toFloat(), h.toFloat(),
-            intArrayOf(bgDark, Color.argb(80, Color.red(primary), Color.green(primary), Color.blue(primary)), bgDark),
-            null,
-            Shader.TileMode.CLAMP
-        )
-        paint.shader = bgShader
-        canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
-        paint.shader = null
+        drawCinematicBackground(canvas, w, h, wp, palette, bgDark, paint)
 
-        // Large macro face rendering
         val faceCx = w * 0.5f
-        val faceCy = h * 0.45f
-        val faceR = w * 0.40f
+        val faceCy = h * 0.46f
+        val faceR = w * 0.42f
 
-        drawCharacterFace(canvas, archetype, wp, faceCx, faceCy, faceR, palette, paint, isCloseUp = true)
+        drawRealisticFace(canvas, archetype, wp, faceCx, faceCy, faceR, palette, paint, isMacro = true)
 
-        // Ki sparks jumping across hair
-        val rand = Random(wp.id.hashCode() + 42)
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 2.5f
-        paint.color = Color.WHITE
-        for (i in 0..6) {
-            val sx = faceCx + (rand.nextFloat() - 0.5f) * faceR * 1.8f
-            val sy = faceCy - rand.nextFloat() * faceR * 1.2f
-            drawLightningBolt(canvas, sx, sy, sx + (rand.nextFloat() - 0.5f) * 60f, sy + 60f, rand, paint)
-        }
-
-        // Subtitle badge
-        drawBannerFooter(canvas, w, h, wp, accent, paint)
+        drawCinematicFooter(canvas, w, h, wp, palette, paint)
     }
-
-    // =========================================================================
-    // CHARACTER FACE RENDERING ENGINE
-    // =========================================================================
 
     fun drawCharacterFace(
         canvas: Canvas,
@@ -387,298 +308,437 @@ object CharacterFigureRenderer {
         cx: Float,
         cy: Float,
         r: Float,
-        palette: CharacterPalette,
+        palette: RealisticPalette,
         paint: Paint,
-        isCloseUp: Boolean
+        isCloseUp: Boolean = true
     ) {
-        // 1. Neck and Shoulders base
+        drawRealisticFace(canvas, archetype, wp, cx, cy, r, palette, paint, isMacro = isCloseUp)
+    }
+
+    fun drawCharacterWholeBody(
+        canvas: Canvas,
+        archetype: CharacterArchetype,
+        wp: Wallpaper,
+        cx: Float,
+        cy: Float,
+        bodyH: Float,
+        palette: RealisticPalette,
+        paint: Paint
+    ) {
+        drawRealisticWholeBody(canvas, archetype, wp, cx, cy, bodyH, palette, paint)
+    }
+
+    // =========================================================================
+    // CINEMATIC BACKGROUND & LIGHTING
+    // =========================================================================
+
+    private fun drawCinematicBackground(
+        canvas: Canvas,
+        w: Int,
+        h: Int,
+        wp: Wallpaper,
+        palette: RealisticPalette,
+        bgDark: Int,
+        paint: Paint
+    ) {
+        // Deep multi-stop gradient background
+        val bgShader = LinearGradient(
+            0f, 0f, 0f, h.toFloat(),
+            intArrayOf(
+                bgDark,
+                Color.argb(120, Color.red(palette.auraGlow), Color.green(palette.auraGlow), Color.blue(palette.auraGlow)),
+                bgDark
+            ),
+            floatArrayOf(0f, 0.48f, 1f),
+            Shader.TileMode.CLAMP
+        )
         paint.style = Paint.Style.FILL
-        paint.color = palette.skinShadow
-        val neckPath = Path().apply {
-            moveTo(cx - r * 0.35f, cy + r * 0.5f)
-            lineTo(cx - r * 0.55f, cy + r * 1.3f)
-            lineTo(cx + r * 0.55f, cy + r * 1.3f)
-            lineTo(cx + r * 0.35f, cy + r * 0.5f)
-            close()
-        }
-        canvas.drawPath(neckPath, paint)
+        paint.shader = bgShader
+        canvas.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
+        paint.shader = null
 
-        // Trapezius and collarbone lines
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = r * 0.03f
-        paint.color = Color.argb(120, 0, 0, 0)
-        canvas.drawLine(cx - r * 0.25f, cy + r * 0.8f, cx - r * 0.45f, cy + r * 1.2f, paint)
-        canvas.drawLine(cx + r * 0.25f, cy + r * 0.8f, cx + r * 0.45f, cy + r * 1.2f, paint)
-
-        // 2. Anime Jawline & Head Structure
+        // Volumetric Crepuscular God Rays streaming down
+        val rand = Random(wp.id.hashCode())
         paint.style = Paint.Style.FILL
-        paint.color = palette.skinColor
-        val jawPath = Path().apply {
-            moveTo(cx - r * 0.65f, cy - r * 0.1f) // Left cheekbone
-            lineTo(cx - r * 0.50f, cy + r * 0.55f) // Left jaw
-            lineTo(cx, cy + r * 0.85f)             // Chin tip
-            lineTo(cx + r * 0.50f, cy + r * 0.55f) // Right jaw
-            lineTo(cx + r * 0.65f, cy - r * 0.1f) // Right cheekbone
-            // Top skull dome curve
-            quadTo(cx, cy - r * 0.85f, cx - r * 0.65f, cy - r * 0.1f)
-            close()
+        for (i in 0..6) {
+            val rayTopX = w * (0.2f + rand.nextFloat() * 0.6f)
+            val rayBottomX = rayTopX + (rand.nextFloat() - 0.5f) * w * 0.5f
+            val rayWidth = w * (0.08f + rand.nextFloat() * 0.12f)
+
+            val rayShader = LinearGradient(
+                rayTopX, 0f, rayBottomX, h * 0.8f,
+                intArrayOf(
+                    Color.argb(60, Color.red(palette.rimLight), Color.green(palette.rimLight), Color.blue(palette.rimLight)),
+                    Color.TRANSPARENT
+                ),
+                null,
+                Shader.TileMode.CLAMP
+            )
+            paint.shader = rayShader
+            val rayPath = Path().apply {
+                moveTo(rayTopX - rayWidth * 0.2f, 0f)
+                lineTo(rayTopX + rayWidth * 0.2f, 0f)
+                lineTo(rayBottomX + rayWidth, h * 0.8f)
+                lineTo(rayBottomX - rayWidth, h * 0.8f)
+                close()
+            }
+            canvas.drawPath(rayPath, paint)
         }
-        canvas.drawPath(jawPath, paint)
+        paint.shader = null
 
-        // Chin & jaw shadow for anime depth
-        paint.style = Paint.Style.FILL
-        paint.color = palette.skinShadow
-        val jawShadow = Path().apply {
-            moveTo(cx - r * 0.45f, cy + r * 0.58f)
-            lineTo(cx, cy + r * 0.85f)
-            lineTo(cx + r * 0.45f, cy + r * 0.58f)
-            lineTo(cx, cy + r * 0.72f)
-            close()
-        }
-        canvas.drawPath(jawShadow, paint)
-
-        // 3. Ears & Species Adornments
-        drawEars(canvas, archetype, cx, cy, r, palette, paint)
-
-        // 4. Intense DBZ Eyes & Eyebrows
-        drawEyesAndBrows(canvas, wp, archetype, cx, cy, r, palette, paint)
-
-        // 5. Anime Nose & Mouth (Determined battle smirk / gritted teeth)
-        drawNoseAndMouth(canvas, cx, cy, r, paint)
-
-        // 6. Facial Battle Scuffs / Markings
-        drawBattleMarkings(canvas, wp, archetype, cx, cy, r, paint)
-
-        // 7. Signature Hairstyle & Head Crown
-        drawHairstyle(canvas, archetype, wp, cx, cy, r, palette, paint)
-
-        // 8. Capsule Corp Scouter HUD Overlay (if Saiyan / Scouter saga)
-        if (wp.tags.any { it.lowercase().contains("scouter") } || wp.form.lowercase().contains("scouter")) {
-            drawScouterOverlay(canvas, cx, cy, r, paint)
+        // Floating glowing ki particles
+        for (i in 0..50) {
+            val px = rand.nextFloat() * w
+            val py = rand.nextFloat() * h
+            val size = 1f + rand.nextFloat() * 4f
+            val alpha = 30 + rand.nextInt(150)
+            paint.color = Color.argb(alpha, Color.red(palette.auraCore), Color.green(palette.auraCore), Color.blue(palette.auraCore))
+            canvas.drawCircle(px, py, size, paint)
         }
     }
 
-    private fun drawEars(
+    // =========================================================================
+    // REALISTIC ANIME FACE RENDERING ENGINE
+    // =========================================================================
+
+    fun drawRealisticFace(
+        canvas: Canvas,
+        archetype: CharacterArchetype,
+        wp: Wallpaper,
+        cx: Float,
+        cy: Float,
+        r: Float,
+        palette: RealisticPalette,
+        paint: Paint,
+        isMacro: Boolean
+    ) {
+        // 1. Muscular Neck with Dynamic Light & Ambient Occlusion
+        val neckTopY = cy + r * 0.45f
+        val neckBottomY = cy + r * 1.35f
+        val neckShader = LinearGradient(
+            cx, neckTopY, cx, neckBottomY,
+            intArrayOf(palette.skinShadow, palette.skinBase, palette.skinShadow),
+            floatArrayOf(0f, 0.45f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        paint.style = Paint.Style.FILL
+        paint.shader = neckShader
+        val neckPath = Path().apply {
+            moveTo(cx - r * 0.38f, neckTopY)
+            lineTo(cx - r * 0.60f, neckBottomY)
+            lineTo(cx + r * 0.60f, neckBottomY)
+            lineTo(cx + r * 0.38f, neckTopY)
+            close()
+        }
+        canvas.drawPath(neckPath, paint)
+        paint.shader = null
+
+        // Sternocleidomastoid muscle & collarbone shading lines
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = r * 0.03f
+        paint.color = palette.skinShadow
+        canvas.drawLine(cx - r * 0.28f, neckTopY + r * 0.3f, cx - r * 0.50f, neckBottomY - r * 0.1f, paint)
+        canvas.drawLine(cx + r * 0.28f, neckTopY + r * 0.3f, cx + r * 0.50f, neckBottomY - r * 0.1f, paint)
+
+        // 2. Anatomically Sculpted Jawline with Volumetric 3D Gradient
+        val jawShader = LinearGradient(
+            cx, cy - r * 0.3f, cx, cy + r * 0.9f,
+            intArrayOf(palette.skinHighlight, palette.skinBase, palette.skinShadow),
+            floatArrayOf(0f, 0.5f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        paint.style = Paint.Style.FILL
+        paint.shader = jawShader
+        val jawPath = Path().apply {
+            moveTo(cx - r * 0.68f, cy - r * 0.15f) // Left cheek
+            lineTo(cx - r * 0.52f, cy + r * 0.55f) // Left jaw
+            lineTo(cx, cy + r * 0.88f)             // Sharp chin point
+            lineTo(cx + r * 0.52f, cy + r * 0.55f) // Right jaw
+            lineTo(cx + r * 0.68f, cy - r * 0.15f) // Right cheek
+            quadTo(cx, cy - r * 0.85f, cx - r * 0.68f, cy - r * 0.15f)
+            close()
+        }
+        canvas.drawPath(jawPath, paint)
+        paint.shader = null
+
+        // Subtle cheekbone contour shadows
+        paint.style = Paint.Style.FILL
+        paint.color = Color.argb(45, Color.red(palette.skinShadow), Color.green(palette.skinShadow), Color.blue(palette.skinShadow))
+        canvas.drawOval(RectF(cx - r * 0.58f, cy + r * 0.15f, cx - r * 0.35f, cy + r * 0.45f), paint)
+        canvas.drawOval(RectF(cx + r * 0.35f, cy + r * 0.15f, cx + r * 0.58f, cy + r * 0.45f), paint)
+
+        // Energetic Rim Light along the jaw edge
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = r * 0.025f
+        paint.color = palette.rimLight
+        val rimJaw = Path().apply {
+            moveTo(cx - r * 0.52f, cy + r * 0.55f)
+            lineTo(cx, cy + r * 0.88f)
+            lineTo(cx + r * 0.52f, cy + r * 0.55f)
+        }
+        canvas.drawPath(rimJaw, paint)
+
+        // 3. Ears & Species Adornments
+        drawRealisticEars(canvas, archetype, cx, cy, r, palette, paint)
+
+        // 4. Hyper-Detailed Realistic Anime Eyes & Eyebrows
+        drawRealisticEyesAndBrows(canvas, wp, archetype, cx, cy, r, palette, paint)
+
+        // 5. Sculpted Anime Nose & Determined Mouth
+        drawRealisticNoseAndMouth(canvas, cx, cy, r, palette, paint)
+
+        // 6. Realistic Battle Scuffs & Markings
+        drawRealisticBattleScuffs(canvas, wp, archetype, cx, cy, r, paint)
+
+        // 7. Volumetric Multi-Layered Hairstyle with Specular Sheen Band
+        drawRealisticHairstyle(canvas, archetype, wp, cx, cy, r, palette, paint)
+
+        // 8. Capsule Scouter HUD
+        if (wp.tags.any { it.lowercase().contains("scouter") } || wp.form.lowercase().contains("scouter")) {
+            drawRealisticScouter(canvas, cx, cy, r, paint)
+        }
+    }
+
+    private fun drawRealisticEars(
         canvas: Canvas,
         archetype: CharacterArchetype,
         cx: Float,
         cy: Float,
         r: Float,
-        palette: CharacterPalette,
+        palette: RealisticPalette,
         paint: Paint
     ) {
         paint.style = Paint.Style.FILL
         if (archetype == CharacterArchetype.NAMEKIAN_PICCOLO) {
-            // Elongated pointed Namekian ears
-            paint.color = palette.skinColor
+            paint.color = palette.skinBase
             val leftEar = Path().apply {
-                moveTo(cx - r * 0.62f, cy + r * 0.05f)
-                lineTo(cx - r * 1.05f, cy - r * 0.15f) // Sharp point
-                lineTo(cx - r * 0.58f, cy + r * 0.35f)
+                moveTo(cx - r * 0.65f, cy + r * 0.05f)
+                lineTo(cx - r * 1.10f, cy - r * 0.18f)
+                lineTo(cx - r * 0.60f, cy + r * 0.40f)
                 close()
             }
             canvas.drawPath(leftEar, paint)
 
             val rightEar = Path().apply {
-                moveTo(cx + r * 0.62f, cy + r * 0.05f)
-                lineTo(cx + r * 1.05f, cy - r * 0.15f)
-                lineTo(cx + r * 0.58f, cy + r * 0.35f)
+                moveTo(cx + r * 0.65f, cy + r * 0.05f)
+                lineTo(cx + r * 1.10f, cy - r * 0.18f)
+                lineTo(cx + r * 0.60f, cy + r * 0.40f)
                 close()
             }
             canvas.drawPath(rightEar, paint)
 
-            // Inner pink ear lining
-            paint.color = Color.rgb(220, 100, 140)
-            canvas.drawCircle(cx - r * 0.75f, cy + r * 0.05f, r * 0.08f, paint)
-            canvas.drawCircle(cx + r * 0.75f, cy + r * 0.05f, r * 0.08f, paint)
-        } else if (archetype == CharacterArchetype.DEITY_BEERUS) {
-            // Tall Egyptian feline ears
-            paint.color = palette.skinColor
-            val leftEar = Path().apply {
-                moveTo(cx - r * 0.45f, cy - r * 0.5f)
-                lineTo(cx - r * 0.75f, cy - r * 1.4f) // Tall ear tip
-                lineTo(cx - r * 0.15f, cy - r * 0.75f)
-                close()
-            }
-            canvas.drawPath(leftEar, paint)
-
-            val rightEar = Path().apply {
-                moveTo(cx + r * 0.45f, cy - r * 0.5f)
-                lineTo(cx + r * 0.75f, cy - r * 1.4f)
-                lineTo(cx + r * 0.15f, cy - r * 0.75f)
-                close()
-            }
-            canvas.drawPath(rightEar, paint)
+            // Inner ribbed pink ear patch
+            paint.color = Color.rgb(216, 67, 105)
+            canvas.drawOval(RectF(cx - r * 0.88f, cy - r * 0.05f, cx - r * 0.70f, cy + r * 0.20f), paint)
+            canvas.drawOval(RectF(cx + r * 0.70f, cy - r * 0.05f, cx + r * 0.88f, cy + r * 0.20f), paint)
         } else {
-            // Classic Saiyan / Human rounded anime ears
-            paint.color = palette.skinColor
-            canvas.drawOval(RectF(cx - r * 0.78f, cy - r * 0.05f, cx - r * 0.58f, cy + r * 0.38f), paint)
-            canvas.drawOval(RectF(cx + r * 0.58f, cy - r * 0.05f, cx + r * 0.78f, cy + r * 0.38f), paint)
+            // Realistic Shaded Anime Ears
+            paint.color = palette.skinBase
+            canvas.drawOval(RectF(cx - r * 0.80f, cy - r * 0.05f, cx - r * 0.60f, cy + r * 0.40f), paint)
+            canvas.drawOval(RectF(cx + r * 0.60f, cy - r * 0.05f, cx + r * 0.80f, cy + r * 0.40f), paint)
 
-            // Inner ear contour lines
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = r * 0.025f
+            // Inner Ear Cavity Shadows
+            paint.style = Paint.Style.FILL
             paint.color = palette.skinShadow
-            canvas.drawArc(RectF(cx - r * 0.74f, cy + r * 0.02f, cx - r * 0.62f, cy + r * 0.30f), 0f, 360f, false, paint)
-            canvas.drawArc(RectF(cx + r * 0.62f, cy + r * 0.02f, cx + r * 0.74f, cy + r * 0.30f), 0f, 360f, false, paint)
+            canvas.drawOval(RectF(cx - r * 0.75f, cy + r * 0.06f, cx - r * 0.64f, cy + r * 0.28f), paint)
+            canvas.drawOval(RectF(cx + r * 0.64f, cy + r * 0.06f, cx + r * 0.75f, cy + r * 0.28f), paint)
 
-            // Golden Potara earring for Vegito
-            if (archetype == CharacterArchetype.SAIYAN_FUSION && (palette.primaryAttire == Color.rgb(25, 118, 210))) {
+            // Golden Potara Earring for Vegito
+            if (archetype == CharacterArchetype.SAIYAN_FUSION && palette.attireBase == Color.rgb(25, 100, 190)) {
                 paint.style = Paint.Style.FILL
-                paint.color = Color.rgb(255, 235, 59)
-                canvas.drawCircle(cx - r * 0.68f, cy + r * 0.42f, r * 0.07f, paint)
-                paint.color = Color.WHITE
-                canvas.drawCircle(cx - r * 0.70f, cy + r * 0.40f, r * 0.025f, paint)
+                val potaraShader = RadialGradient(
+                    cx - r * 0.70f, cy + r * 0.44f, r * 0.09f,
+                    intArrayOf(Color.WHITE, Color.rgb(255, 235, 59), Color.rgb(245, 127, 23)),
+                    floatArrayOf(0f, 0.4f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+                paint.shader = potaraShader
+                canvas.drawCircle(cx - r * 0.70f, cy + r * 0.44f, r * 0.08f, paint)
+                paint.shader = null
             }
         }
     }
 
-    private fun drawEyesAndBrows(
+    private fun drawRealisticEyesAndBrows(
         canvas: Canvas,
         wp: Wallpaper,
         archetype: CharacterArchetype,
         cx: Float,
         cy: Float,
         r: Float,
-        palette: CharacterPalette,
+        palette: RealisticPalette,
         paint: Paint
     ) {
         val browY = cy - r * 0.12f
-        val browColor = if (wp.form.lowercase().contains("ultra ego")) palette.skinShadow else palette.hairColor
 
-        // 1. Angular Furrowed Eyebrows
+        // 1. Angular Volumetric Furrowed Eyebrows with Hair Texture
         paint.style = Paint.Style.FILL
-        paint.color = browColor
+        val browShader = LinearGradient(
+            cx, browY - r * 0.15f, cx, browY + r * 0.15f,
+            intArrayOf(palette.hairHighlight, palette.hairBase, palette.hairShadow),
+            floatArrayOf(0f, 0.5f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        paint.shader = browShader
 
-        // Left Eyebrow: angled sharply down to center
         val leftBrow = Path().apply {
-            moveTo(cx - r * 0.58f, browY - r * 0.12f) // Outer high corner
-            lineTo(cx - r * 0.12f, browY + r * 0.02f) // Inner low bridge
-            lineTo(cx - r * 0.12f, browY + r * 0.12f)
-            lineTo(cx - r * 0.55f, browY)
+            moveTo(cx - r * 0.60f, browY - r * 0.14f)
+            lineTo(cx - r * 0.12f, browY + r * 0.02f)
+            lineTo(cx - r * 0.12f, browY + r * 0.14f)
+            lineTo(cx - r * 0.56f, browY + r * 0.02f)
             close()
         }
         canvas.drawPath(leftBrow, paint)
 
-        // Right Eyebrow: mirrored
         val rightBrow = Path().apply {
-            moveTo(cx + r * 0.58f, browY - r * 0.12f)
+            moveTo(cx + r * 0.60f, browY - r * 0.14f)
             lineTo(cx + r * 0.12f, browY + r * 0.02f)
-            lineTo(cx + r * 0.12f, browY + r * 0.12f)
-            lineTo(cx + r * 0.55f, browY)
+            lineTo(cx + r * 0.12f, browY + r * 0.14f)
+            lineTo(cx + r * 0.56f, browY + r * 0.02f)
             close()
         }
         canvas.drawPath(rightBrow, paint)
+        paint.shader = null
 
-        // 2. Fierce Eyes (Rectangular / Trapezoid Toriyama design)
+        // 2. Realistic Anime Eyes with Multi-Tone Radiant Irises
         val eyeTopY = browY + r * 0.06f
-        val eyeBottomY = browY + r * 0.28f
+        val eyeBottomY = browY + r * 0.30f
 
-        // Sclera (White eye background)
-        paint.style = Paint.Style.FILL
-        paint.color = Color.WHITE
-
+        // Sclera with realistic upper eyelid shadow
         val leftEyePath = Path().apply {
-            moveTo(cx - r * 0.52f, eyeTopY)
+            moveTo(cx - r * 0.54f, eyeTopY)
             lineTo(cx - r * 0.16f, eyeTopY + r * 0.04f)
             lineTo(cx - r * 0.18f, eyeBottomY)
-            lineTo(cx - r * 0.48f, eyeBottomY - r * 0.04f)
+            lineTo(cx - r * 0.50f, eyeBottomY - r * 0.04f)
             close()
         }
-        canvas.drawPath(leftEyePath, paint)
-
         val rightEyePath = Path().apply {
-            moveTo(cx + r * 0.52f, eyeTopY)
+            moveTo(cx + r * 0.54f, eyeTopY)
             lineTo(cx + r * 0.16f, eyeTopY + r * 0.04f)
             lineTo(cx + r * 0.18f, eyeBottomY)
-            lineTo(cx + r * 0.48f, eyeBottomY - r * 0.04f)
+            lineTo(cx + r * 0.50f, eyeBottomY - r * 0.04f)
             close()
         }
+
+        // White Sclera with soft top shadow
+        val scleraShader = LinearGradient(
+            cx, eyeTopY, cx, eyeBottomY,
+            intArrayOf(Color.rgb(200, 205, 215), Color.rgb(255, 255, 255)),
+            null,
+            Shader.TileMode.CLAMP
+        )
+        paint.style = Paint.Style.FILL
+        paint.shader = scleraShader
+        canvas.drawPath(leftEyePath, paint)
         canvas.drawPath(rightEyePath, paint)
+        paint.shader = null
 
-        // Glowing Irises
-        paint.color = palette.eyeColor
-        val leftIrisCx = cx - r * 0.32f
-        val rightIrisCx = cx + r * 0.32f
+        // Radiant Multi-Layered Irises
+        val leftIrisCx = cx - r * 0.33f
+        val rightIrisCx = cx + r * 0.33f
         val irisCy = eyeTopY + (eyeBottomY - eyeTopY) * 0.5f
-        val irisRx = r * 0.075f
-        val irisRy = r * 0.095f
+        val irisRx = r * 0.085f
+        val irisRy = r * 0.105f
 
+        val irisShader = RadialGradient(
+            leftIrisCx, irisCy, irisRy,
+            intArrayOf(palette.eyeCore, palette.eyeVibrant, Color.rgb(10, 10, 15)),
+            floatArrayOf(0f, 0.55f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        paint.shader = irisShader
         canvas.drawOval(RectF(leftIrisCx - irisRx, irisCy - irisRy, leftIrisCx + irisRx, irisCy + irisRy), paint)
+
+        val rightIrisShader = RadialGradient(
+            rightIrisCx, irisCy, irisRy,
+            intArrayOf(palette.eyeCore, palette.eyeVibrant, Color.rgb(10, 10, 15)),
+            floatArrayOf(0f, 0.55f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        paint.shader = rightIrisShader
         canvas.drawOval(RectF(rightIrisCx - irisRx, irisCy - irisRy, rightIrisCx + irisRx, irisCy + irisRy), paint)
+        paint.shader = null
 
-        // Dark Pupils
+        // Deep Black Pupils
         paint.color = Color.BLACK
-        canvas.drawCircle(leftIrisCx, irisCy, r * 0.04f, paint)
-        canvas.drawCircle(rightIrisCx, irisCy, r * 0.04f, paint)
+        canvas.drawCircle(leftIrisCx, irisCy, r * 0.045f, paint)
+        canvas.drawCircle(rightIrisCx, irisCy, r * 0.045f, paint)
 
-        // Specular White Highlights (Life gleam in eyes)
+        // Double Crystalline Specular Reflections
         paint.color = Color.WHITE
-        canvas.drawCircle(leftIrisCx - r * 0.02f, irisCy - r * 0.03f, r * 0.02f, paint)
-        canvas.drawCircle(rightIrisCx - r * 0.02f, irisCy - r * 0.03f, r * 0.02f, paint)
+        canvas.drawCircle(leftIrisCx - r * 0.025f, irisCy - r * 0.035f, r * 0.025f, paint)
+        canvas.drawCircle(leftIrisCx + r * 0.025f, irisCy + r * 0.035f, r * 0.015f, paint)
+        canvas.drawCircle(rightIrisCx - r * 0.025f, irisCy - r * 0.035f, r * 0.025f, paint)
+        canvas.drawCircle(rightIrisCx + r * 0.025f, irisCy + r * 0.035f, r * 0.015f, paint)
 
-        // Bold Black Eyeliner Outlines
+        // Bold Crisp Anime Eyeliner Outlines
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = r * 0.035f
+        paint.strokeWidth = r * 0.04f
         paint.color = Color.BLACK
-        canvas.drawLine(cx - r * 0.54f, eyeTopY, cx - r * 0.14f, eyeTopY + r * 0.04f, paint)
-        canvas.drawLine(cx + r * 0.54f, eyeTopY, cx + r * 0.14f, eyeTopY + r * 0.04f, paint)
-        canvas.drawLine(cx - r * 0.48f, eyeBottomY - r * 0.04f, cx - r * 0.18f, eyeBottomY, paint)
-        canvas.drawLine(cx + r * 0.48f, eyeBottomY - r * 0.04f, cx + r * 0.18f, eyeBottomY, paint)
+        canvas.drawLine(cx - r * 0.56f, eyeTopY, cx - r * 0.14f, eyeTopY + r * 0.04f, paint)
+        canvas.drawLine(cx + r * 0.56f, eyeTopY, cx + r * 0.14f, eyeTopY + r * 0.04f, paint)
+        canvas.drawLine(cx - r * 0.50f, eyeBottomY - r * 0.04f, cx - r * 0.18f, eyeBottomY, paint)
+        canvas.drawLine(cx + r * 0.50f, eyeBottomY - r * 0.04f, cx + r * 0.18f, eyeBottomY, paint)
 
-        // Intense Under-eye battle lines
+        // Realistic Forehead wrinkles & battle tension lines
         paint.strokeWidth = r * 0.02f
-        paint.color = Color.argb(180, 50, 40, 40)
-        canvas.drawLine(cx - r * 0.45f, eyeBottomY + r * 0.06f, cx - r * 0.30f, eyeBottomY + r * 0.08f, paint)
-        canvas.drawLine(cx + r * 0.45f, eyeBottomY + r * 0.06f, cx + r * 0.30f, eyeBottomY + r * 0.08f, paint)
-
-        // Forehead furrow wrinkle between brows
-        canvas.drawLine(cx - r * 0.04f, browY - r * 0.05f, cx - r * 0.04f, browY + r * 0.10f, paint)
-        canvas.drawLine(cx + r * 0.04f, browY - r * 0.05f, cx + r * 0.04f, browY + r * 0.10f, paint)
+        paint.color = Color.argb(160, Color.red(palette.skinShadow), Color.green(palette.skinShadow), Color.blue(palette.skinShadow))
+        canvas.drawLine(cx - r * 0.05f, browY - r * 0.06f, cx - r * 0.05f, browY + r * 0.10f, paint)
+        canvas.drawLine(cx + r * 0.05f, browY - r * 0.06f, cx + r * 0.05f, browY + r * 0.10f, paint)
+        canvas.drawLine(cx - r * 0.46f, eyeBottomY + r * 0.08f, cx - r * 0.28f, eyeBottomY + r * 0.10f, paint)
+        canvas.drawLine(cx + r * 0.46f, eyeBottomY + r * 0.08f, cx + r * 0.28f, eyeBottomY + r * 0.10f, paint)
     }
 
-    private fun drawNoseAndMouth(canvas: Canvas, cx: Float, cy: Float, r: Float, paint: Paint) {
-        // Anime Nose (angled sharp shadow)
-        paint.style = Paint.Style.FILL
-        paint.color = Color.argb(160, 80, 50, 40)
+    private fun drawRealisticNoseAndMouth(
+        canvas: Canvas,
+        cx: Float,
+        cy: Float,
+        r: Float,
+        palette: RealisticPalette,
+        paint: Paint
+    ) {
+        // Sculpted 3D Anime Nose with Cast Shadow
         val nosePath = Path().apply {
             moveTo(cx, cy + r * 0.18f)
-            lineTo(cx - r * 0.06f, cy + r * 0.34f)
-            lineTo(cx, cy + r * 0.34f)
+            lineTo(cx - r * 0.07f, cy + r * 0.35f)
+            lineTo(cx, cy + r * 0.35f)
             close()
         }
+        paint.style = Paint.Style.FILL
+        paint.color = palette.skinShadow
         canvas.drawPath(nosePath, paint)
 
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = r * 0.025f
         paint.color = Color.BLACK
-        canvas.drawLine(cx, cy + r * 0.18f, cx - r * 0.06f, cy + r * 0.34f, paint)
-        canvas.drawLine(cx - r * 0.06f, cy + r * 0.34f, cx + r * 0.04f, cy + r * 0.34f, paint)
+        canvas.drawLine(cx, cy + r * 0.18f, cx - r * 0.07f, cy + r * 0.35f, paint)
+        canvas.drawLine(cx - r * 0.07f, cy + r * 0.35f, cx + r * 0.04f, cy + r * 0.35f, paint)
 
-        // Determined Battle Smirk / Gritted Teeth Mouth
-        val mouthY = cy + r * 0.54f
+        // Determined Battle Smirk / Clenched Teeth Mouth
+        val mouthY = cy + r * 0.55f
         paint.style = Paint.Style.FILL
         paint.color = Color.WHITE
-        canvas.drawRoundRect(RectF(cx - r * 0.22f, mouthY - r * 0.04f, cx + r * 0.22f, mouthY + r * 0.04f), 4f, 4f, paint)
+        canvas.drawRoundRect(RectF(cx - r * 0.22f, mouthY - r * 0.035f, cx + r * 0.22f, mouthY + r * 0.035f), 4f, 4f, paint)
 
+        // Black Mouth Line
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = r * 0.03f
+        paint.strokeWidth = r * 0.035f
         paint.color = Color.BLACK
-        canvas.drawLine(cx - r * 0.24f, mouthY, cx + r * 0.24f, mouthY, paint)
+        canvas.drawLine(cx - r * 0.25f, mouthY, cx + r * 0.25f, mouthY, paint)
 
-        // Teeth vertical notches
+        // Subtle teeth notches
         paint.strokeWidth = r * 0.015f
-        canvas.drawLine(cx - r * 0.08f, mouthY - r * 0.03f, cx - r * 0.08f, mouthY + r * 0.03f, paint)
+        canvas.drawLine(cx - r * 0.09f, mouthY - r * 0.03f, cx - r * 0.09f, mouthY + r * 0.03f, paint)
         canvas.drawLine(cx, mouthY - r * 0.03f, cx, mouthY + r * 0.03f, paint)
-        canvas.drawLine(cx + r * 0.08f, mouthY - r * 0.03f, cx + r * 0.08f, mouthY + r * 0.03f, paint)
+        canvas.drawLine(cx + r * 0.09f, mouthY - r * 0.03f, cx + r * 0.09f, mouthY + r * 0.03f, paint)
 
-        // Lower lip shadow accent
-        paint.strokeWidth = r * 0.025f
-        paint.color = Color.argb(180, 100, 60, 50)
-        canvas.drawLine(cx - r * 0.08f, mouthY + r * 0.08f, cx + r * 0.08f, mouthY + r * 0.08f, paint)
+        // Lower lip cast shadow
+        paint.strokeWidth = r * 0.03f
+        paint.color = palette.skinShadow
+        canvas.drawLine(cx - r * 0.09f, mouthY + r * 0.08f, cx + r * 0.09f, mouthY + r * 0.08f, paint)
     }
 
-    private fun drawBattleMarkings(
+    private fun drawRealisticBattleScuffs(
         canvas: Canvas,
         wp: Wallpaper,
         archetype: CharacterArchetype,
@@ -690,7 +750,7 @@ object CharacterFigureRenderer {
         val titleLower = wp.title.lowercase()
         val charLower = wp.character.lowercase()
 
-        // Majin "M" emblem on forehead for Majin Vegeta
+        // Majin M Emblem on forehead
         if (titleLower.contains("majin") || charLower.contains("majin")) {
             paint.style = Paint.Style.FILL
             paint.color = Color.BLACK
@@ -711,262 +771,274 @@ object CharacterFigureRenderer {
             canvas.drawPath(mPath, paint)
         }
 
-        // Bardock's Cross Cheek Scar
+        // Realistic Anime Cheek Battle Scratches
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = r * 0.02f
+        paint.color = Color.rgb(183, 28, 28) // Deep crimson scuff
+        canvas.drawLine(cx - r * 0.45f, cy + r * 0.38f, cx - r * 0.30f, cy + r * 0.42f, paint)
+        canvas.drawLine(cx - r * 0.48f, cy + r * 0.42f, cx - r * 0.34f, cy + r * 0.46f, paint)
+        canvas.drawLine(cx + r * 0.32f, cy + r * 0.38f, cx + r * 0.46f, cy + r * 0.42f, paint)
+
+        // Bardock's Cross Scar
         if (charLower.contains("bardock")) {
-            paint.style = Paint.Style.STROKE
             paint.strokeWidth = r * 0.035f
             paint.color = Color.rgb(183, 28, 28)
-            val scarX = cx - r * 0.40f
-            val scarY = cy + r * 0.38f
-            canvas.drawLine(scarX - r * 0.12f, scarY - r * 0.12f, scarX + r * 0.12f, scarY + r * 0.12f, paint)
-            canvas.drawLine(scarX - r * 0.10f, scarY + r * 0.10f, scarX + r * 0.10f, scarY - r * 0.10f, paint)
+            val scarX = cx - r * 0.42f
+            val scarY = cy + r * 0.40f
+            canvas.drawLine(scarX - r * 0.14f, scarY - r * 0.14f, scarX + r * 0.14f, scarY + r * 0.14f, paint)
+            canvas.drawLine(scarX - r * 0.12f, scarY + r * 0.12f, scarX + r * 0.12f, scarY - r * 0.12f, paint)
         }
     }
 
-    private fun drawHairstyle(
+    private fun drawRealisticHairstyle(
         canvas: Canvas,
         archetype: CharacterArchetype,
         wp: Wallpaper,
         cx: Float,
         cy: Float,
         r: Float,
-        palette: CharacterPalette,
+        palette: RealisticPalette,
         paint: Paint
     ) {
+        val hairShader = LinearGradient(
+            cx, cy - r * 1.8f, cx, cy,
+            intArrayOf(palette.hairHighlight, palette.hairBase, palette.hairShadow),
+            floatArrayOf(0f, 0.45f, 1f),
+            Shader.TileMode.CLAMP
+        )
         paint.style = Paint.Style.FILL
-        paint.color = palette.hairColor
+        paint.shader = hairShader
 
         val hairPath = Path()
 
         when (archetype) {
             CharacterArchetype.SAIYAN_VEGETA -> {
-                // Iconic upright flame hair with widow's peak
-                hairPath.moveTo(cx, cy - r * 0.35f) // Center widow's peak
-                hairPath.lineTo(cx - r * 0.30f, cy - r * 0.50f)
-                hairPath.lineTo(cx - r * 0.65f, cy - r * 0.30f)
-                hairPath.lineTo(cx - r * 0.85f, cy - r * 0.85f) // Far left flame spike
-                hairPath.lineTo(cx - r * 0.55f, cy - r * 0.95f)
-                hairPath.lineTo(cx - r * 0.45f, cy - r * 1.50f) // Tall left main spike
-                hairPath.lineTo(cx - r * 0.15f, cy - r * 1.25f)
-                hairPath.lineTo(cx, cy - r * 1.65f)            // Supreme central flame point
-                hairPath.lineTo(cx + r * 0.15f, cy - r * 1.25f)
-                hairPath.lineTo(cx + r * 0.45f, cy - r * 1.50f) // Tall right main spike
-                hairPath.lineTo(cx + r * 0.55f, cy - r * 0.95f)
-                hairPath.lineTo(cx + r * 0.85f, cy - r * 0.85f) // Far right flame spike
-                hairPath.lineTo(cx + r * 0.65f, cy - r * 0.30f)
-                hairPath.lineTo(cx + r * 0.30f, cy - r * 0.50f)
+                // Majestic Upright Flame Hair
+                hairPath.moveTo(cx, cy - r * 0.38f)
+                hairPath.lineTo(cx - r * 0.32f, cy - r * 0.52f)
+                hairPath.lineTo(cx - r * 0.68f, cy - r * 0.32f)
+                hairPath.lineTo(cx - r * 0.90f, cy - r * 0.90f)
+                hairPath.lineTo(cx - r * 0.60f, cy - r * 1.05f)
+                hairPath.lineTo(cx - r * 0.48f, cy - r * 1.60f)
+                hairPath.lineTo(cx - r * 0.16f, cy - r * 1.30f)
+                hairPath.lineTo(cx, cy - r * 1.75f)            // Tallest flame spike
+                hairPath.lineTo(cx + r * 0.16f, cy - r * 1.30f)
+                hairPath.lineTo(cx + r * 0.48f, cy - r * 1.60f)
+                hairPath.lineTo(cx + r * 0.60f, cy - r * 1.05f)
+                hairPath.lineTo(cx + r * 0.90f, cy - r * 0.90f)
+                hairPath.lineTo(cx + r * 0.68f, cy - r * 0.32f)
+                hairPath.lineTo(cx + r * 0.32f, cy - r * 0.52f)
                 hairPath.close()
+                canvas.drawPath(hairPath, paint)
+                paint.shader = null
+
+                // Iconic Anime Sheen Band (gloss highlight curve)
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = r * 0.06f
+                paint.color = palette.hairHighlight
+                val sheen = Path().apply {
+                    moveTo(cx - r * 0.55f, cy - r * 0.85f)
+                    quadTo(cx, cy - r * 1.15f, cx + r * 0.55f, cy - r * 0.85f)
+                }
+                canvas.drawPath(sheen, paint)
+
+                // Energetic Rim Highlight
+                paint.strokeWidth = r * 0.03f
+                paint.color = palette.rimLight
                 canvas.drawPath(hairPath, paint)
             }
 
             CharacterArchetype.SAIYAN_GOHAN -> {
-                // Teen SSJ2 / Beast Gohan: Sharp angled spikes with single dramatic front bang falling to eye
-                hairPath.moveTo(cx - r * 0.55f, cy - r * 0.30f)
-                hairPath.lineTo(cx - r * 0.90f, cy - r * 0.90f)
-                hairPath.lineTo(cx - r * 0.60f, cy - r * 1.10f)
-                hairPath.lineTo(cx - r * 0.35f, cy - r * 1.65f) // Massive vertical Beast/SSJ2 spike
-                hairPath.lineTo(cx + r * 0.15f, cy - r * 1.20f)
-                hairPath.lineTo(cx + r * 0.55f, cy - r * 1.45f)
-                hairPath.lineTo(cx + r * 0.80f, cy - r * 0.70f)
-                hairPath.lineTo(cx + r * 0.55f, cy - r * 0.30f)
+                // Teen SSJ2 / Beast Gohan: Swept-back spikes with single dramatic front bang
+                hairPath.moveTo(cx - r * 0.58f, cy - r * 0.32f)
+                hairPath.lineTo(cx - r * 0.95f, cy - r * 0.95f)
+                hairPath.lineTo(cx - r * 0.65f, cy - r * 1.15f)
+                hairPath.lineTo(cx - r * 0.38f, cy - r * 1.75f) // Towering Beast spike
+                hairPath.lineTo(cx + r * 0.16f, cy - r * 1.25f)
+                hairPath.lineTo(cx + r * 0.58f, cy - r * 1.55f)
+                hairPath.lineTo(cx + r * 0.85f, cy - r * 0.75f)
+                hairPath.lineTo(cx + r * 0.58f, cy - r * 0.32f)
                 hairPath.close()
                 canvas.drawPath(hairPath, paint)
+                paint.shader = null
 
-                // Dramatic long falling front bang
+                // Dramatic long front bang falling past brow
+                paint.style = Paint.Style.FILL
+                paint.color = palette.hairBase
                 val bang = Path().apply {
-                    moveTo(cx - r * 0.15f, cy - r * 0.45f)
-                    lineTo(cx - r * 0.32f, cy + r * 0.15f) // Tip hanging down past brow
-                    lineTo(cx - r * 0.05f, cy - r * 0.20f)
+                    moveTo(cx - r * 0.16f, cy - r * 0.48f)
+                    lineTo(cx - r * 0.35f, cy + r * 0.18f)
+                    lineTo(cx - r * 0.05f, cy - r * 0.22f)
                     close()
                 }
                 canvas.drawPath(bang, paint)
-            }
 
-            CharacterArchetype.SAIYAN_TRUNKS -> {
-                // Center-parted curtain bangs framing temples
-                hairPath.moveTo(cx, cy - r * 0.45f)
-                hairPath.lineTo(cx - r * 0.40f, cy - r * 0.05f) // Left curtain bang
-                hairPath.lineTo(cx - r * 0.65f, cy - r * 0.25f)
-                hairPath.lineTo(cx - r * 0.80f, cy - r * 0.75f)
-                hairPath.lineTo(cx, cy - r * 0.95f)
-                hairPath.lineTo(cx + r * 0.80f, cy - r * 0.75f)
-                hairPath.lineTo(cx + r * 0.65f, cy - r * 0.25f)
-                hairPath.lineTo(cx + r * 0.40f, cy - r * 0.05f) // Right curtain bang
-                hairPath.close()
+                // Rim light
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = r * 0.03f
+                paint.color = palette.rimLight
                 canvas.drawPath(hairPath, paint)
             }
 
             CharacterArchetype.BIO_FRIEZA -> {
-                // Sleek bio-helmet with purple oval jewel on forehead
-                paint.color = Color.rgb(240, 240, 250)
-                canvas.drawCircle(cx, cy - r * 0.45f, r * 0.55f, paint)
+                // Bio-helmet with glossy purple crystal gem
+                paint.style = Paint.Style.FILL
+                val domeShader = RadialGradient(
+                    cx, cy - r * 0.5f, r * 0.6f,
+                    intArrayOf(Color.WHITE, Color.rgb(240, 235, 250), Color.rgb(170, 160, 190)),
+                    floatArrayOf(0f, 0.4f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+                paint.shader = domeShader
+                canvas.drawCircle(cx, cy - r * 0.48f, r * 0.58f, paint)
+                paint.shader = null
 
-                // Central Forehead Gem
-                paint.color = Color.rgb(142, 36, 170)
-                canvas.drawOval(RectF(cx - r * 0.22f, cy - r * 0.65f, cx + r * 0.22f, cy - r * 0.30f), paint)
-                paint.color = Color.WHITE
-                canvas.drawCircle(cx - r * 0.08f, cy - r * 0.52f, r * 0.04f, paint)
+                // Central Forehead Gem with Jewel Refraction
+                val gemShader = RadialGradient(
+                    cx - r * 0.08f, cy - r * 0.55f, r * 0.25f,
+                    intArrayOf(Color.WHITE, Color.rgb(171, 71, 188), Color.rgb(74, 20, 140)),
+                    floatArrayOf(0f, 0.45f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+                paint.shader = gemShader
+                canvas.drawOval(RectF(cx - r * 0.24f, cy - r * 0.68f, cx + r * 0.24f, cy - r * 0.32f), paint)
+                paint.shader = null
             }
 
             CharacterArchetype.BIO_CELL -> {
-                // Crown horns spreading outward
-                paint.color = Color.rgb(20, 20, 20)
+                // Crown beetle horn winglets
+                paint.style = Paint.Style.FILL
+                paint.color = Color.rgb(20, 20, 25)
                 val leftHorn = Path().apply {
-                    moveTo(cx - r * 0.35f, cy - r * 0.40f)
-                    lineTo(cx - r * 1.15f, cy - r * 1.25f) // Far outer horn tip
-                    lineTo(cx - r * 0.50f, cy - r * 0.80f)
+                    moveTo(cx - r * 0.38f, cy - r * 0.42f)
+                    lineTo(cx - r * 1.20f, cy - r * 1.35f)
+                    lineTo(cx - r * 0.52f, cy - r * 0.85f)
                     close()
                 }
                 canvas.drawPath(leftHorn, paint)
 
                 val rightHorn = Path().apply {
-                    moveTo(cx + r * 0.35f, cy - r * 0.40f)
-                    lineTo(cx + r * 1.15f, cy - r * 1.25f)
-                    lineTo(cx + r * 0.50f, cy - r * 0.80f)
+                    moveTo(cx + r * 0.38f, cy - r * 0.42f)
+                    lineTo(cx + r * 1.20f, cy - r * 1.35f)
+                    lineTo(cx + r * 0.52f, cy - r * 0.85f)
                     close()
                 }
                 canvas.drawPath(rightHorn, paint)
 
-                // Purple triangular cheek plates
+                // Purple cheek exoskeleton plates
                 paint.color = Color.rgb(123, 31, 162)
                 val leftCheek = Path().apply {
-                    moveTo(cx - r * 0.62f, cy + r * 0.10f)
-                    lineTo(cx - r * 0.50f, cy + r * 0.55f)
-                    lineTo(cx - r * 0.35f, cy + r * 0.35f)
+                    moveTo(cx - r * 0.65f, cy + r * 0.10f)
+                    lineTo(cx - r * 0.52f, cy + r * 0.58f)
+                    lineTo(cx - r * 0.36f, cy + r * 0.36f)
                     close()
                 }
                 canvas.drawPath(leftCheek, paint)
                 val rightCheek = Path().apply {
-                    moveTo(cx + r * 0.62f, cy + r * 0.10f)
-                    lineTo(cx + r * 0.50f, cy + r * 0.55f)
-                    lineTo(cx + r * 0.35f, cy + r * 0.35f)
+                    moveTo(cx + r * 0.65f, cy + r * 0.10f)
+                    lineTo(cx + r * 0.52f, cy + r * 0.58f)
+                    lineTo(cx + r * 0.36f, cy + r * 0.36f)
                     close()
                 }
                 canvas.drawPath(rightCheek, paint)
             }
 
-            CharacterArchetype.MAJIN_BUU -> {
-                // Smooth pink head with head tentacle
-                paint.color = palette.skinColor
-                canvas.drawCircle(cx, cy - r * 0.35f, r * 0.50f, paint)
-
-                val tentacle = Path().apply {
-                    moveTo(cx - r * 0.15f, cy - r * 0.75f)
-                    quadTo(cx + r * 0.35f, cy - r * 1.35f, cx + r * 0.55f, cy - r * 1.05f)
-                    quadTo(cx + r * 0.15f, cy - r * 0.85f, cx + r * 0.15f, cy - r * 0.75f)
-                    close()
-                }
-                canvas.drawPath(tentacle, paint)
-            }
-
-            CharacterArchetype.DRAGON_SHENRON -> {
-                // Antler horns & whiskers
-                paint.color = Color.rgb(180, 100, 30) // Horn brown
-                val leftHorn = Path().apply {
-                    moveTo(cx - r * 0.45f, cy - r * 0.40f)
-                    lineTo(cx - r * 1.05f, cy - r * 1.30f)
-                    lineTo(cx - r * 0.70f, cy - r * 0.75f)
-                    close()
-                }
-                canvas.drawPath(leftHorn, paint)
-                val rightHorn = Path().apply {
-                    moveTo(cx + r * 0.45f, cy - r * 0.40f)
-                    lineTo(cx + r * 1.05f, cy - r * 1.30f)
-                    lineTo(cx + r * 0.70f, cy - r * 0.75f)
-                    close()
-                }
-                canvas.drawPath(rightHorn, paint)
-
-                // Whiskers
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = r * 0.04f
-                paint.color = Color.rgb(255, 235, 59)
-                val leftWhisker = Path().apply {
-                    moveTo(cx - r * 0.20f, cy + r * 0.30f)
-                    cubicTo(cx - r * 0.70f, cy + r * 0.50f, cx - r * 1.10f, cy + r * 0.80f, cx - r * 1.30f, cy + r * 1.20f)
-                }
-                canvas.drawPath(leftWhisker, paint)
-                val rightWhisker = Path().apply {
-                    moveTo(cx + r * 0.20f, cy + r * 0.30f)
-                    cubicTo(cx + r * 0.70f, cy + r * 0.50f, cx + r * 1.10f, cy + r * 0.80f, cx + r * 1.30f, cy + r * 1.20f)
-                }
-                canvas.drawPath(rightWhisker, paint)
-            }
-
             else -> {
-                // Classic Goku / Saiyan / Fusion Master Spikes!
-                // 5 iconic giant spikes curving outwards + 3 forehead bangs
-                hairPath.moveTo(cx - r * 0.45f, cy - r * 0.30f)
-                // Spike 1 (lower left wide tuft)
-                hairPath.lineTo(cx - r * 1.15f, cy - r * 0.25f)
-                hairPath.lineTo(cx - r * 0.75f, cy - r * 0.55f)
-                // Spike 2 (middle left dramatic flare)
-                hairPath.lineTo(cx - r * 1.30f, cy - r * 0.85f)
-                hairPath.lineTo(cx - r * 0.70f, cy - r * 0.95f)
-                // Spike 3 (top left towering spike)
-                hairPath.lineTo(cx - r * 0.95f, cy - r * 1.45f)
-                hairPath.lineTo(cx - r * 0.40f, cy - r * 1.25f)
-                // Spike 4 (central crown spike)
-                hairPath.lineTo(cx - r * 0.10f, cy - r * 1.65f)
-                hairPath.lineTo(cx + r * 0.25f, cy - r * 1.25f)
-                // Spike 5 (top right spike)
-                hairPath.lineTo(cx + r * 0.80f, cy - r * 1.35f)
-                hairPath.lineTo(cx + r * 0.65f, cy - r * 0.85f)
-                // Spike 6 (lower right wide spike)
-                hairPath.lineTo(cx + r * 1.15f, cy - r * 0.50f)
-                hairPath.lineTo(cx + r * 0.55f, cy - r * 0.25f)
+                // Master Goku / Saiyan / Fusion Hair with Volumetric Depth & Rim Flare
+                hairPath.moveTo(cx - r * 0.48f, cy - r * 0.32f)
+                // Left Spikes
+                hairPath.lineTo(cx - r * 1.25f, cy - r * 0.28f)
+                hairPath.lineTo(cx - r * 0.80f, cy - r * 0.60f)
+                hairPath.lineTo(cx - r * 1.40f, cy - r * 0.95f)
+                hairPath.lineTo(cx - r * 0.75f, cy - r * 1.05f)
+                hairPath.lineTo(cx - r * 1.05f, cy - r * 1.55f)
+                hairPath.lineTo(cx - r * 0.45f, cy - r * 1.35f)
+                // Crown Spikes
+                hairPath.lineTo(cx - r * 0.12f, cy - r * 1.78f)
+                hairPath.lineTo(cx + r * 0.28f, cy - r * 1.35f)
+                // Right Spikes
+                hairPath.lineTo(cx + r * 0.90f, cy - r * 1.45f)
+                hairPath.lineTo(cx + r * 0.70f, cy - r * 0.90f)
+                hairPath.lineTo(cx + r * 1.25f, cy - r * 0.55f)
+                hairPath.lineTo(cx + r * 0.60f, cy - r * 0.28f)
                 hairPath.close()
                 canvas.drawPath(hairPath, paint)
+                paint.shader = null
 
-                // 3 Signature forehead bangs hanging between brows
+                // Specular Anime Gloss Sheen
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = r * 0.06f
+                paint.color = palette.hairHighlight
+                val sheen = Path().apply {
+                    moveTo(cx - r * 0.75f, cy - r * 0.85f)
+                    quadTo(cx, cy - r * 1.25f, cx + r * 0.70f, cy - r * 0.85f)
+                }
+                canvas.drawPath(sheen, paint)
+
+                // 3 Signature Forehead Bangs
+                paint.style = Paint.Style.FILL
+                paint.color = palette.hairBase
+
                 val bang1 = Path().apply {
-                    moveTo(cx - r * 0.45f, cy - r * 0.40f)
-                    lineTo(cx - r * 0.35f, cy - r * 0.05f)
-                    lineTo(cx - r * 0.20f, cy - r * 0.30f)
+                    moveTo(cx - r * 0.48f, cy - r * 0.42f)
+                    lineTo(cx - r * 0.36f, cy - r * 0.05f)
+                    lineTo(cx - r * 0.22f, cy - r * 0.32f)
                     close()
                 }
                 canvas.drawPath(bang1, paint)
 
                 val bang2 = Path().apply {
-                    moveTo(cx - r * 0.25f, cy - r * 0.40f)
-                    lineTo(cx - r * 0.05f, cy + r * 0.02f)
-                    lineTo(cx + r * 0.08f, cy - r * 0.30f)
+                    moveTo(cx - r * 0.28f, cy - r * 0.42f)
+                    lineTo(cx - r * 0.06f, cy + r * 0.04f)
+                    lineTo(cx + r * 0.10f, cy - r * 0.32f)
                     close()
                 }
                 canvas.drawPath(bang2, paint)
 
                 val bang3 = Path().apply {
-                    moveTo(cx + r * 0.12f, cy - r * 0.35f)
-                    lineTo(cx + r * 0.28f, cy - r * 0.08f)
-                    lineTo(cx + r * 0.42f, cy - r * 0.30f)
+                    moveTo(cx + r * 0.14f, cy - r * 0.38f)
+                    lineTo(cx + r * 0.30f, cy - r * 0.06f)
+                    lineTo(cx + r * 0.45f, cy - r * 0.32f)
                     close()
                 }
                 canvas.drawPath(bang3, paint)
+
+                // Energetic Rim Highlight
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = r * 0.035f
+                paint.color = palette.rimLight
+                canvas.drawPath(hairPath, paint)
             }
         }
     }
 
-    private fun drawScouterOverlay(canvas: Canvas, cx: Float, cy: Float, r: Float, paint: Paint) {
-        val scouterX = cx - r * 0.32f
-        val scouterY = cy + r * 0.05f
+    private fun drawRealisticScouter(canvas: Canvas, cx: Float, cy: Float, r: Float, paint: Paint) {
+        val scouterX = cx - r * 0.33f
+        val scouterY = cy + r * 0.06f
 
-        // Translucent green HUD lens
+        // Glowing Translucent Green HUD with Glass Reflection
+        val lensShader = LinearGradient(
+            scouterX - r * 0.36f, scouterY - r * 0.25f, scouterX + r * 0.36f, scouterY + r * 0.25f,
+            intArrayOf(Color.argb(190, 0, 255, 120), Color.argb(120, 0, 180, 80)),
+            null,
+            Shader.TileMode.CLAMP
+        )
         paint.style = Paint.Style.FILL
-        paint.color = Color.argb(130, 0, 230, 118)
-        canvas.drawRoundRect(RectF(scouterX - r * 0.35f, scouterY - r * 0.25f, scouterX + r * 0.35f, scouterY + r * 0.25f), 12f, 12f, paint)
+        paint.shader = lensShader
+        canvas.drawRoundRect(RectF(scouterX - r * 0.36f, scouterY - r * 0.26f, scouterX + r * 0.36f, scouterY + r * 0.26f), 12f, 12f, paint)
+        paint.shader = null
 
-        // Frame
+        // Metallic Frame & Ear Device
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = r * 0.04f
-        paint.color = Color.rgb(238, 255, 65)
-        canvas.drawRoundRect(RectF(scouterX - r * 0.35f, scouterY - r * 0.25f, scouterX + r * 0.35f, scouterY + r * 0.25f), 12f, 12f, paint)
+        paint.color = Color.rgb(255, 235, 59)
+        canvas.drawRoundRect(RectF(scouterX - r * 0.36f, scouterY - r * 0.26f, scouterX + r * 0.36f, scouterY + r * 0.26f), 12f, 12f, paint)
 
-        // Headband clip going to ear
         paint.strokeWidth = r * 0.05f
-        paint.color = Color.rgb(180, 190, 205)
-        canvas.drawLine(scouterX - r * 0.35f, scouterY, cx - r * 0.72f, scouterY, paint)
+        paint.color = Color.rgb(190, 200, 215)
+        canvas.drawLine(scouterX - r * 0.36f, scouterY, cx - r * 0.74f, scouterY, paint)
 
-        // Digital HUD reticle lines
+        // Digital Target Reticle & Power Level Grid
         paint.strokeWidth = 2f
         paint.color = Color.rgb(255, 23, 68)
         canvas.drawCircle(scouterX, scouterY, r * 0.12f, paint)
@@ -975,21 +1047,21 @@ object CharacterFigureRenderer {
     }
 
     // =========================================================================
-    // WHOLE BODY HEROIC COMBAT STANCE ENGINE
+    // REALISTIC ANIME WHOLE BODY ENGINE
     // =========================================================================
 
-    fun drawCharacterWholeBody(
+    fun drawRealisticWholeBody(
         canvas: Canvas,
         archetype: CharacterArchetype,
         wp: Wallpaper,
         cx: Float,
         cy: Float,
         bodyH: Float,
-        palette: CharacterPalette,
+        palette: RealisticPalette,
         paint: Paint
     ) {
-        val headH = bodyH * 0.18f
-        val torsoH = bodyH * 0.32f
+        val headH = bodyH * 0.17f
+        val torsoH = bodyH * 0.33f
         val pelvisH = bodyH * 0.10f
         val legsH = bodyH * 0.40f
 
@@ -1000,11 +1072,15 @@ object CharacterFigureRenderer {
         val pelvisY = waistY + pelvisH
         val feetY = pelvisY + legsH
 
-        // 1. Explosive Ki Aura around whole body
-        val auraRadius = bodyH * 0.55f
+        // 1. Realistic Multi-Layered Ki Aura (Atmospheric Corona + Core Plasma + Lightning)
+        val auraRadius = bodyH * 0.58f
         val auraShader = RadialGradient(
             cx, cy - bodyH * 0.05f, auraRadius,
-            intArrayOf(Color.argb(160, Color.red(palette.auraCore), Color.green(palette.auraCore), Color.blue(palette.auraCore)), Color.argb(80, Color.red(palette.auraGlow), Color.green(palette.auraGlow), Color.blue(palette.auraGlow)), Color.TRANSPARENT),
+            intArrayOf(
+                Color.argb(180, Color.red(palette.auraCore), Color.green(palette.auraCore), Color.blue(palette.auraCore)),
+                Color.argb(90, Color.red(palette.auraGlow), Color.green(palette.auraGlow), Color.blue(palette.auraGlow)),
+                Color.TRANSPARENT
+            ),
             floatArrayOf(0f, 0.55f, 1f),
             Shader.TileMode.CLAMP
         )
@@ -1013,96 +1089,144 @@ object CharacterFigureRenderer {
         canvas.drawCircle(cx, cy - bodyH * 0.05f, auraRadius, paint)
         paint.shader = null
 
-        // Crackling lightning bolts around stance
-        val rand = Random(wp.id.hashCode() + 17)
+        // Upward turbulent ki flame tongues
+        val rand = Random(wp.id.hashCode() + 33)
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 2.5f
-        paint.color = Color.WHITE
-        for (i in 0..4) {
-            val lx1 = cx + (rand.nextFloat() - 0.5f) * bodyH * 0.5f
-            val ly1 = cy + (rand.nextFloat() - 0.5f) * bodyH * 0.6f
-            drawLightningBolt(canvas, lx1, ly1, lx1 + (rand.nextFloat() - 0.5f) * 80f, ly1 + 90f, rand, paint)
+        for (i in 0..12) {
+            val fx = cx + (rand.nextFloat() - 0.5f) * bodyH * 0.45f
+            val flamePath = Path()
+            flamePath.moveTo(fx, feetY)
+            var curX = fx
+            var curY = feetY
+            val fLen = bodyH * (0.4f + rand.nextFloat() * 0.45f)
+            val steps = 6
+            val dy = fLen / steps
+            for (s in 1..steps) {
+                curY -= dy
+                curX += (rand.nextFloat() - 0.5f) * 45f
+                flamePath.lineTo(curX, curY)
+            }
+            paint.strokeWidth = 3f + rand.nextFloat() * 4f
+            paint.color = Color.argb(120 + rand.nextInt(100), Color.red(palette.rimLight), Color.green(palette.rimLight), Color.blue(palette.rimLight))
+            canvas.drawPath(flamePath, paint)
         }
 
-        // Ground Impact Crater and Dust Clouds
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 3f
-        paint.color = Color.argb(180, Color.red(palette.auraGlow), Color.green(palette.auraGlow), Color.blue(palette.auraGlow))
-        canvas.drawOval(RectF(cx - bodyH * 0.38f, feetY - 20f, cx + bodyH * 0.38f, feetY + 20f), paint)
+        // High-Voltage Plasma Lightning Arcs
+        paint.strokeWidth = 2.5f
+        for (i in 0..5) {
+            paint.color = Color.WHITE
+            val lx1 = cx + (rand.nextFloat() - 0.5f) * bodyH * 0.5f
+            val ly1 = cy + (rand.nextFloat() - 0.5f) * bodyH * 0.6f
+            drawLightningBolt(canvas, lx1, ly1, lx1 + (rand.nextFloat() - 0.5f) * 90f, ly1 + 100f, rand, paint)
+        }
 
-        // 2. Muscular Legs in Wide Grounded Power Stance
-        val leftFootX = cx - bodyH * 0.20f
-        val rightFootX = cx + bodyH * 0.20f
+        // Ground Impact Crater with Molten Rim & Uplight
+        val craterW = bodyH * 0.40f
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 4f
+        paint.color = Color.argb(220, Color.red(palette.rimLight), Color.green(palette.rimLight), Color.blue(palette.rimLight))
+        canvas.drawOval(RectF(cx - craterW, feetY - 24f, cx + craterW, feetY + 24f), paint)
+
+        // 2. Muscular Legs in Wide Grounded Power Stance with Realistic Fabric Shading
+        val leftFootX = cx - bodyH * 0.21f
+        val rightFootX = cx + bodyH * 0.21f
 
         paint.style = Paint.Style.FILL
-        paint.color = palette.primaryAttire
+        val legShader = LinearGradient(
+            cx, waistY, cx, feetY,
+            intArrayOf(palette.attireBase, palette.attireShadow),
+            floatArrayOf(0f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        paint.shader = legShader
 
-        // Left Leg
         val leftLeg = Path().apply {
             moveTo(cx - bodyH * 0.08f, waistY + pelvisH * 0.5f)
-            lineTo(leftFootX - bodyH * 0.06f, feetY - bodyH * 0.08f) // Knee/Shin
+            lineTo(leftFootX - bodyH * 0.07f, feetY - bodyH * 0.08f)
             lineTo(leftFootX + bodyH * 0.04f, feetY - bodyH * 0.08f)
             lineTo(cx, pelvisY)
             close()
         }
         canvas.drawPath(leftLeg, paint)
 
-        // Right Leg
         val rightLeg = Path().apply {
             moveTo(cx + bodyH * 0.08f, waistY + pelvisH * 0.5f)
-            lineTo(rightFootX + bodyH * 0.06f, feetY - bodyH * 0.08f)
+            lineTo(rightFootX + bodyH * 0.07f, feetY - bodyH * 0.08f)
             lineTo(rightFootX - bodyH * 0.04f, feetY - bodyH * 0.08f)
             lineTo(cx, pelvisY)
             close()
         }
         canvas.drawPath(rightLeg, paint)
+        paint.shader = null
 
-        // 3. Combat Boots / Sabatons
-        paint.color = if (archetype == CharacterArchetype.SAIYAN_VEGETA) Color.WHITE else Color.rgb(20, 40, 90)
-        // Left Boot
+        // Realistic Fabric Folds & Muscle Grooves on Pants
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 2.5f
+        paint.color = palette.attireShadow
+        canvas.drawLine(leftFootX - bodyH * 0.02f, pelvisY + bodyH * 0.08f, leftFootX - bodyH * 0.04f, feetY - bodyH * 0.12f, paint)
+        canvas.drawLine(rightFootX + bodyH * 0.02f, pelvisY + bodyH * 0.08f, rightFootX + bodyH * 0.04f, feetY - bodyH * 0.12f, paint)
+
+        // 3. Combat Boots with Dynamic Highlights
+        paint.style = Paint.Style.FILL
+        paint.color = if (archetype == CharacterArchetype.SAIYAN_VEGETA) Color.WHITE else Color.rgb(18, 35, 75)
+
         val leftBoot = Path().apply {
-            moveTo(leftFootX - bodyH * 0.06f, feetY - bodyH * 0.08f)
-            lineTo(leftFootX - bodyH * 0.09f, feetY) // Toe point
+            moveTo(leftFootX - bodyH * 0.07f, feetY - bodyH * 0.08f)
+            lineTo(leftFootX - bodyH * 0.10f, feetY)
             lineTo(leftFootX + bodyH * 0.05f, feetY)
             lineTo(leftFootX + bodyH * 0.04f, feetY - bodyH * 0.08f)
             close()
         }
         canvas.drawPath(leftBoot, paint)
 
-        // Right Boot
         val rightBoot = Path().apply {
             moveTo(rightFootX - bodyH * 0.04f, feetY - bodyH * 0.08f)
             lineTo(rightFootX - bodyH * 0.05f, feetY)
-            lineTo(rightFootX + bodyH * 0.09f, feetY)
-            lineTo(rightFootX + bodyH * 0.06f, feetY - bodyH * 0.08f)
+            lineTo(rightFootX + bodyH * 0.10f, feetY)
+            lineTo(rightFootX + bodyH * 0.07f, feetY - bodyH * 0.08f)
             close()
         }
         canvas.drawPath(rightBoot, paint)
 
-        // Boot Toe Accents (Yellow for Vegeta/Trunks, Red for Goku)
+        // Boot Toe Cap Accent with Gloss
         paint.color = if (archetype == CharacterArchetype.SAIYAN_VEGETA) Color.rgb(255, 214, 0) else Color.rgb(213, 0, 0)
-        canvas.drawRect(leftFootX - bodyH * 0.08f, feetY - 6f, leftFootX - bodyH * 0.02f, feetY, paint)
-        canvas.drawRect(rightFootX + bodyH * 0.02f, feetY - 6f, rightFootX + bodyH * 0.08f, feetY, paint)
+        canvas.drawRect(leftFootX - bodyH * 0.09f, feetY - 8f, leftFootX - bodyH * 0.03f, feetY, paint)
+        canvas.drawRect(rightFootX + bodyH * 0.03f, feetY - 8f, rightFootX + bodyH * 0.09f, feetY, paint)
 
-        // 4. Pelvis & Martial Arts Belt Sash
-        paint.color = palette.secondaryAttire
-        canvas.drawRoundRect(RectF(cx - bodyH * 0.12f, waistY - 6f, cx + bodyH * 0.12f, waistY + pelvisH * 0.6f), 8f, 8f, paint)
+        // 4. Waistband Sash / Armor Belt
+        val beltShader = LinearGradient(
+            cx - bodyH * 0.14f, waistY, cx + bodyH * 0.14f, waistY,
+            intArrayOf(palette.accentShadow, palette.accentAttire, palette.accentShadow),
+            null,
+            Shader.TileMode.CLAMP
+        )
+        paint.shader = beltShader
+        canvas.drawRoundRect(RectF(cx - bodyH * 0.13f, waistY - 6f, cx + bodyH * 0.13f, waistY + pelvisH * 0.6f), 8f, 8f, paint)
+        paint.shader = null
 
-        // Dangling Belt Sash Ribbons (for Goku / Gi)
+        // Trailing Knot Ribbons
+        paint.color = palette.accentAttire
         val sashKnot = Path().apply {
             moveTo(cx - 10f, waistY + 10f)
-            lineTo(cx - 24f, waistY + pelvisH * 1.5f)
-            lineTo(cx - 14f, waistY + pelvisH * 1.5f)
+            lineTo(cx - 26f, waistY + pelvisH * 1.6f)
+            lineTo(cx - 14f, waistY + pelvisH * 1.6f)
             lineTo(cx, waistY + 10f)
             close()
         }
         canvas.drawPath(sashKnot, paint)
 
-        // 5. Muscular Torso & Attire (V-taper build)
-        val shoulderWidth = bodyH * 0.28f
-        val waistWidth = bodyH * 0.16f
+        // 5. Sculpted Muscular Torso (Broad Shoulders, Striated Pecs, 6-Pack Abs)
+        val shoulderWidth = bodyH * 0.30f
+        val waistWidth = bodyH * 0.17f
 
-        paint.color = palette.primaryAttire
+        val torsoShader = LinearGradient(
+            cx, shouldersY, cx, waistY,
+            intArrayOf(palette.attireBase, palette.attireShadow),
+            null,
+            Shader.TileMode.CLAMP
+        )
+        paint.shader = torsoShader
+
         val torsoPath = Path().apply {
             moveTo(cx - shoulderWidth * 0.5f, shouldersY)
             lineTo(cx - waistWidth * 0.5f, waistY)
@@ -1111,89 +1235,110 @@ object CharacterFigureRenderer {
             close()
         }
         canvas.drawPath(torsoPath, paint)
+        paint.shader = null
 
-        // Attire Details: Saiyan Battle Armor / Orange Gi V-Neck / Piccolo Cape
+        // Specific Attire Anatomy: Saiyan Battle Armor / Orange Gi V-Neck / Piccolo Cape
         if (archetype == CharacterArchetype.SAIYAN_VEGETA) {
-            // White armor chestplate with golden shoulder guards
-            paint.color = Color.WHITE
-            canvas.drawRoundRect(RectF(cx - shoulderWidth * 0.45f, shouldersY, cx + shoulderWidth * 0.45f, waistY), 6f, 6f, paint)
+            // Metallic White Armor with Gold Shoulder Flaps
+            val armorShader = LinearGradient(
+                cx, shouldersY, cx, waistY,
+                intArrayOf(Color.rgb(255, 255, 255), Color.rgb(210, 215, 225)),
+                null,
+                Shader.TileMode.CLAMP
+            )
+            paint.shader = armorShader
+            canvas.drawRoundRect(RectF(cx - shoulderWidth * 0.46f, shouldersY, cx + shoulderWidth * 0.46f, waistY), 8f, 8f, paint)
+            paint.shader = null
 
-            paint.color = Color.rgb(255, 214, 0) // Gold shoulder flaps
-            canvas.drawRect(cx - shoulderWidth * 0.58f, shouldersY - 6f, cx - shoulderWidth * 0.35f, shouldersY + 14f, paint)
-            canvas.drawRect(cx + shoulderWidth * 0.35f, shouldersY - 6f, cx + shoulderWidth * 0.58f, shouldersY + 14f, paint)
+            // Gold shoulder guards with metallic shine
+            val goldShader = LinearGradient(
+                cx, shouldersY, cx, shouldersY + 18f,
+                intArrayOf(Color.rgb(255, 240, 160), Color.rgb(255, 195, 0)),
+                null,
+                Shader.TileMode.CLAMP
+            )
+            paint.shader = goldShader
+            canvas.drawRect(cx - shoulderWidth * 0.60f, shouldersY - 6f, cx - shoulderWidth * 0.36f, shouldersY + 16f, paint)
+            canvas.drawRect(cx + shoulderWidth * 0.36f, shouldersY - 6f, cx + shoulderWidth * 0.60f, shouldersY + 16f, paint)
+            paint.shader = null
         } else if (archetype == CharacterArchetype.NAMEKIAN_PICCOLO) {
-            // Oversized weighted white shoulder cape
+            // Oversized Weighted White Cape
             paint.color = Color.WHITE
             val cape = Path().apply {
-                moveTo(cx - shoulderWidth * 0.70f, shouldersY - 14f)
-                lineTo(cx + shoulderWidth * 0.70f, shouldersY - 14f)
-                lineTo(cx + shoulderWidth * 0.55f, waistY + 20f)
-                lineTo(cx - shoulderWidth * 0.55f, waistY + 20f)
+                moveTo(cx - shoulderWidth * 0.72f, shouldersY - 16f)
+                lineTo(cx + shoulderWidth * 0.72f, shouldersY - 16f)
+                lineTo(cx + shoulderWidth * 0.58f, waistY + 24f)
+                lineTo(cx - shoulderWidth * 0.58f, waistY + 24f)
                 close()
             }
             canvas.drawPath(cape, paint)
         } else {
-            // Classic Blue V-Neck undershirt
-            paint.color = palette.secondaryAttire
+            // Classic V-Neck Blue Undershirt with depth
+            paint.color = palette.accentAttire
             val vNeck = Path().apply {
-                moveTo(cx - shoulderWidth * 0.25f, shouldersY)
+                moveTo(cx - shoulderWidth * 0.26f, shouldersY)
                 lineTo(cx, shouldersY + torsoH * 0.45f)
-                lineTo(cx + shoulderWidth * 0.25f, shouldersY)
+                lineTo(cx + shoulderWidth * 0.26f, shouldersY)
                 close()
             }
             canvas.drawPath(vNeck, paint)
         }
 
-        // Pectoral and Abs muscle shadows
+        // Pectorals & 6-Pack Abdominal 3D Contours
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 2.5f
-        paint.color = Color.argb(80, 0, 0, 0)
+        paint.color = Color.argb(100, 0, 0, 0)
         canvas.drawLine(cx, shouldersY + torsoH * 0.25f, cx, waistY, paint) // Linea alba
-        canvas.drawLine(cx - 25f, shouldersY + torsoH * 0.40f, cx + 25f, shouldersY + torsoH * 0.40f, paint)
-        canvas.drawLine(cx - 20f, shouldersY + torsoH * 0.65f, cx + 20f, shouldersY + torsoH * 0.65f, paint)
+        canvas.drawLine(cx - 28f, shouldersY + torsoH * 0.40f, cx + 28f, shouldersY + torsoH * 0.40f, paint)
+        canvas.drawLine(cx - 24f, shouldersY + torsoH * 0.65f, cx + 24f, shouldersY + torsoH * 0.65f, paint)
 
-        // 6. Muscular Arms & Clenched Power Fists
+        // 6. Muscular Arms (Deltoids, Flexed Biceps, Forearm Gauntlets & Clenched Fists)
         paint.style = Paint.Style.FILL
-        paint.color = palette.skinColor
+        val armShader = LinearGradient(
+            cx, shouldersY, cx, waistY + 30f,
+            intArrayOf(palette.skinHighlight, palette.skinBase, palette.skinShadow),
+            null,
+            Shader.TileMode.CLAMP
+        )
+        paint.shader = armShader
 
-        val armSpan = bodyH * 0.26f
-        // Left Arm (bent flexed power stance)
+        val armSpan = bodyH * 0.27f
         val leftArm = Path().apply {
             moveTo(cx - shoulderWidth * 0.5f, shouldersY)
-            lineTo(cx - shoulderWidth * 0.5f - armSpan * 0.6f, shouldersY + torsoH * 0.55f) // Elbow
-            lineTo(cx - shoulderWidth * 0.5f - armSpan * 0.3f, shouldersY + torsoH * 0.95f) // Wrist
-            lineTo(cx - shoulderWidth * 0.4f, shouldersY + torsoH * 0.45f)
+            lineTo(cx - shoulderWidth * 0.5f - armSpan * 0.62f, shouldersY + torsoH * 0.55f) // Elbow
+            lineTo(cx - shoulderWidth * 0.5f - armSpan * 0.32f, shouldersY + torsoH * 0.95f) // Wrist
+            lineTo(cx - shoulderWidth * 0.42f, shouldersY + torsoH * 0.45f)
             close()
         }
         canvas.drawPath(leftArm, paint)
 
-        // Right Arm (bent flexed power stance)
         val rightArm = Path().apply {
             moveTo(cx + shoulderWidth * 0.5f, shouldersY)
-            lineTo(cx + shoulderWidth * 0.5f + armSpan * 0.6f, shouldersY + torsoH * 0.55f) // Elbow
-            lineTo(cx + shoulderWidth * 0.5f + armSpan * 0.3f, shouldersY + torsoH * 0.95f) // Wrist
-            lineTo(cx + shoulderWidth * 0.4f, shouldersY + torsoH * 0.45f)
+            lineTo(cx + shoulderWidth * 0.5f + armSpan * 0.62f, shouldersY + torsoH * 0.55f)
+            lineTo(cx + shoulderWidth * 0.5f + armSpan * 0.32f, shouldersY + torsoH * 0.95f)
+            lineTo(cx + shoulderWidth * 0.42f, shouldersY + torsoH * 0.45f)
             close()
         }
         canvas.drawPath(rightArm, paint)
+        paint.shader = null
 
-        // Wristbands / Gloves
-        paint.color = if (archetype == CharacterArchetype.SAIYAN_VEGETA) Color.WHITE else palette.secondaryAttire
-        canvas.drawCircle(cx - shoulderWidth * 0.5f - armSpan * 0.3f, shouldersY + torsoH * 0.95f, 14f, paint)
-        canvas.drawCircle(cx + shoulderWidth * 0.5f + armSpan * 0.3f, shouldersY + torsoH * 0.95f, 14f, paint)
+        // Wristbands / Gauntlets
+        paint.color = if (archetype == CharacterArchetype.SAIYAN_VEGETA) Color.WHITE else palette.accentAttire
+        canvas.drawCircle(cx - shoulderWidth * 0.5f - armSpan * 0.32f, shouldersY + torsoH * 0.95f, 15f, paint)
+        canvas.drawCircle(cx + shoulderWidth * 0.5f + armSpan * 0.32f, shouldersY + torsoH * 0.95f, 15f, paint)
 
-        // Clenched Fists with Ki flare
-        paint.color = palette.skinColor
-        canvas.drawCircle(cx - shoulderWidth * 0.5f - armSpan * 0.3f - 8f, shouldersY + torsoH * 0.95f + 10f, 12f, paint)
-        canvas.drawCircle(cx + shoulderWidth * 0.5f + armSpan * 0.3f + 8f, shouldersY + torsoH * 0.95f + 10f, 12f, paint)
+        // Clenched Power Fists with Energy Glow
+        paint.color = palette.skinBase
+        canvas.drawCircle(cx - shoulderWidth * 0.5f - armSpan * 0.32f - 9f, shouldersY + torsoH * 0.95f + 12f, 13f, paint)
+        canvas.drawCircle(cx + shoulderWidth * 0.5f + armSpan * 0.32f + 9f, shouldersY + torsoH * 0.95f + 12f, 13f, paint)
 
-        // 7. Head & Face on whole body
-        val bodyFaceR = headH * 0.45f
-        drawCharacterFace(canvas, archetype, wp, cx, headCy, bodyFaceR, palette, paint, isCloseUp = false)
+        // 7. Full-Body Head & Face
+        val bodyFaceR = headH * 0.46f
+        drawRealisticFace(canvas, archetype, wp, cx, headCy, bodyFaceR, palette, paint, isMacro = false)
     }
 
     // =========================================================================
-    // COMPOSITION HELPERS & GRAPHICS
+    // ENERGY RIFT DIVIDER & CINEMATIC FOOTER
     // =========================================================================
 
     private fun drawEnergyRiftDivider(
@@ -1201,35 +1346,33 @@ object CharacterFigureRenderer {
         w: Int,
         h: Int,
         wp: Wallpaper,
-        palette: CharacterPalette,
-        primary: Int,
-        accent: Int,
+        palette: RealisticPalette,
         paint: Paint
     ) {
         val riftY = h * 0.46f
 
-        // Horizontal luminous energy line
+        // Volumetric Horizontal Plasma Rift
         val riftShader = LinearGradient(
             0f, riftY, w.toFloat(), riftY,
-            intArrayOf(Color.TRANSPARENT, palette.auraCore, Color.WHITE, palette.auraCore, Color.TRANSPARENT),
+            intArrayOf(Color.TRANSPARENT, palette.rimLight, Color.WHITE, palette.rimLight, Color.TRANSPARENT),
             floatArrayOf(0f, 0.25f, 0.5f, 0.75f, 1f),
             Shader.TileMode.CLAMP
         )
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 5f
+        paint.strokeWidth = 6f
         paint.shader = riftShader
         canvas.drawLine(0f, riftY, w.toFloat(), riftY, paint)
-        paint.strokeWidth = 14f
-        paint.color = Color.argb(90, Color.red(palette.auraGlow), Color.green(palette.auraGlow), Color.blue(palette.auraGlow))
-        canvas.drawLine(w * 0.1f, riftY, w * 0.9f, riftY, paint)
+        paint.strokeWidth = 18f
+        paint.color = Color.argb(80, Color.red(palette.auraGlow), Color.green(palette.auraGlow), Color.blue(palette.auraGlow))
+        canvas.drawLine(w * 0.08f, riftY, w * 0.92f, riftY, paint)
         paint.shader = null
 
-        // Central Golden Kanji Seal Disk
-        val sealR = w * 0.11f
+        // Metallic Golden Kanji Seal Disk
+        val sealR = w * 0.12f
         val sealShader = RadialGradient(
             w * 0.5f, riftY, sealR,
-            intArrayOf(Color.rgb(255, 235, 59), Color.rgb(255, 145, 0), Color.rgb(180, 50, 0)),
-            floatArrayOf(0f, 0.7f, 1f),
+            intArrayOf(Color.rgb(255, 245, 180), Color.rgb(255, 175, 0), Color.rgb(190, 60, 0)),
+            floatArrayOf(0f, 0.65f, 1f),
             Shader.TileMode.CLAMP
         )
         paint.style = Paint.Style.FILL
@@ -1238,48 +1381,55 @@ object CharacterFigureRenderer {
         paint.shader = null
 
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 3f
+        paint.strokeWidth = 3.5f
         paint.color = Color.WHITE
         canvas.drawCircle(w * 0.5f, riftY, sealR, paint)
 
-        // Kanji text in seal
+        // Kanji symbol with depth
         val kanji = if (wp.kanjiSymbol.isNotEmpty()) wp.kanjiSymbol else "氣"
         paint.style = Paint.Style.FILL
         paint.color = Color.BLACK
         paint.typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
         paint.textAlign = Paint.Align.CENTER
-        paint.textSize = sealR * 1.25f
-        canvas.drawText(kanji, w * 0.5f, riftY + sealR * 0.45f, paint)
+        paint.textSize = sealR * 1.30f
+        canvas.drawText(kanji, w * 0.5f, riftY + sealR * 0.46f, paint)
 
         paint.color = Color.WHITE
-        paint.textSize = sealR * 1.20f
+        paint.textSize = sealR * 1.25f
         canvas.drawText(kanji, w * 0.5f, riftY + sealR * 0.42f, paint)
     }
 
-    private fun drawBannerFooter(canvas: Canvas, w: Int, h: Int, wp: Wallpaper, accent: Int, paint: Paint) {
-        val bannerY = h * 0.92f
+    private fun drawCinematicFooter(
+        canvas: Canvas,
+        w: Int,
+        h: Int,
+        wp: Wallpaper,
+        palette: RealisticPalette,
+        paint: Paint
+    ) {
+        val bannerY = h * 0.925f
 
-        // Semi-transparent dark pill container
+        // Glassmorphism Dark Container with Rim Glow
         paint.style = Paint.Style.FILL
-        paint.color = Color.argb(200, 10, 12, 18)
-        canvas.drawRoundRect(RectF(w * 0.08f, bannerY - 32f, w * 0.92f, bannerY + 38f), 20f, 20f, paint)
+        paint.color = Color.argb(220, 8, 10, 16)
+        canvas.drawRoundRect(RectF(w * 0.06f, bannerY - 34f, w * 0.94f, bannerY + 40f), 22f, 22f, paint)
 
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 1.5f
-        paint.color = Color.argb(120, Color.red(accent), Color.green(accent), Color.blue(accent))
-        canvas.drawRoundRect(RectF(w * 0.08f, bannerY - 32f, w * 0.92f, bannerY + 38f), 20f, 20f, paint)
+        paint.strokeWidth = 2f
+        paint.color = Color.argb(160, Color.red(palette.rimLight), Color.green(palette.rimLight), Color.blue(palette.rimLight))
+        canvas.drawRoundRect(RectF(w * 0.06f, bannerY - 34f, w * 0.94f, bannerY + 40f), 22f, 22f, paint)
 
         // Character Name & Transformation Form
         paint.style = Paint.Style.FILL
         paint.textAlign = Paint.Align.CENTER
         paint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-        paint.textSize = w * 0.045f
+        paint.textSize = w * 0.046f
         paint.color = Color.WHITE
         canvas.drawText(wp.character.uppercase(), w * 0.5f, bannerY - 4f, paint)
 
-        paint.textSize = w * 0.032f
-        paint.color = Color.rgb(255, 214, 0)
-        canvas.drawText("${wp.form} • ${wp.resolution}", w * 0.5f, bannerY + 24f, paint)
+        paint.textSize = w * 0.033f
+        paint.color = palette.rimLight
+        canvas.drawText("${wp.form} • ${wp.resolution}", w * 0.5f, bannerY + 25f, paint)
     }
 
     private fun drawLightningBolt(canvas: Canvas, x1: Float, y1: Float, x2: Float, y2: Float, rand: Random, paint: Paint) {

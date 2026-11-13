@@ -54,29 +54,87 @@ object WallpaperRenderer {
     }
 
     /**
-     * Generates or extracts a full-resolution 1440x2560 Bitmap for downloading or applying as wallpaper.
+     * Generates or extracts a full-resolution 1440x2560 Bitmap for downloading or applying as wallpaper,
+     * optionally graded with a RealisticTonePreset.
      */
-    fun createFullResolutionBitmap(context: Context, wallpaper: Wallpaper, width: Int = 1440, height: Int = 2560): Bitmap {
-        if (wallpaper.drawableResId != null) {
+    fun createFullResolutionBitmap(
+        context: Context,
+        wallpaper: Wallpaper,
+        width: Int = 1440,
+        height: Int = 2560,
+        tonePreset: com.example.model.RealisticTonePreset = com.example.model.RealisticTonePreset.STUDIO_RAW
+    ): Bitmap {
+        val baseBitmap = if (wallpaper.drawableResId != null) {
             val options = BitmapFactory.Options().apply {
                 inPreferredConfig = Bitmap.Config.ARGB_8888
                 inScaled = false
             }
             val original = BitmapFactory.decodeResource(context.resources, wallpaper.drawableResId, options)
             if (original != null) {
-                return if (original.width == width && original.height == height) {
+                if (original.width == width && original.height == height) {
                     original
                 } else {
                     Bitmap.createScaledBitmap(original, width, height, true)
                 }
+            } else {
+                val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                renderToCanvas(Canvas(bmp), wallpaper, width, height)
+                bmp
             }
+        } else {
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            renderToCanvas(canvas, wallpaper, width, height)
+            bitmap
         }
 
-        // Procedural offline canvas render for high-resolution output
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        renderToCanvas(canvas, wallpaper, width, height)
-        return bitmap
+        if (tonePreset == com.example.model.RealisticTonePreset.STUDIO_RAW) {
+            return baseBitmap
+        }
+        return applyRealisticToneBitmap(baseBitmap, tonePreset)
+    }
+
+    fun getColorMatrixArray(preset: com.example.model.RealisticTonePreset): FloatArray {
+        return when (preset) {
+            com.example.model.RealisticTonePreset.STUDIO_RAW -> floatArrayOf(
+                1f, 0f, 0f, 0f, 0f,
+                0f, 1f, 0f, 0f, 0f,
+                0f, 0f, 1f, 0f, 0f,
+                0f, 0f, 0f, 1f, 0f
+            )
+            com.example.model.RealisticTonePreset.CINEMATIC_HDR -> floatArrayOf(
+                1.18f, 0f, 0f, 0f, -14f,
+                0f, 1.18f, 0f, 0f, -14f,
+                0f, 0f, 1.22f, 0f, -12f,
+                0f, 0f, 0f, 1f, 0f
+            )
+            com.example.model.RealisticTonePreset.AMOLED_VIVID -> floatArrayOf(
+                1.28f, -0.05f, -0.05f, 0f, -26f,
+                -0.05f, 1.28f, -0.05f, 0f, -26f,
+                -0.04f, -0.04f, 1.32f, 0f, -24f,
+                0f, 0f, 0f, 1f, 0f
+            )
+            com.example.model.RealisticTonePreset.GOLDEN_RIM -> floatArrayOf(
+                1.20f, 0.04f, 0f, 0f, 4f,
+                0.02f, 1.10f, 0f, 0f, -6f,
+                0f, 0f, 0.96f, 0f, -10f,
+                0f, 0f, 0f, 1f, 0f
+            )
+        }
+    }
+
+    private fun applyRealisticToneBitmap(
+        source: Bitmap,
+        preset: com.example.model.RealisticTonePreset
+    ): Bitmap {
+        val output = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(output)
+        val matrix = android.graphics.ColorMatrix(getColorMatrixArray(preset))
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            colorFilter = android.graphics.ColorMatrixColorFilter(matrix)
+        }
+        canvas.drawBitmap(source, 0f, 0f, paint)
+        return output
     }
 
     /**
